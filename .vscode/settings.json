@@ -1,0 +1,22 @@
+{
+  // ─── Java Language Server – Readora plain-Java project ───────────────────
+  // All paths are relative to the workspace root so the project stays portable.
+
+  // Tell JDT where the source roots are
+  "java.project.sourcePaths": [
+    "src",
+    "test",
+    "resources"
+  ],
+
+  // Tell JDT to add all three local JARs to the classpath
+  "java.project.referencedLibraries": [
+    "libs/pdfbox-app-3.0.7.jar",
+    "libs/flatlaf-3.7.1.jar",
+    "libs/flatlaf-intellij-themes-3.7.1.jar"
+  ],
+
+  // Match the JDK level set in IntelliJ (misc.xml says JDK_26)
+  "java.compile.nullAnalysis.mode": "disabled",
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

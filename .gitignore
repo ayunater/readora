@@ -1,0 +1,49 @@
+# Build output
+out/
+dist/
+build/
+bin/
+*.class
+
+# Installers and portable runtime builds are attached to GitHub Releases,
+# never committed (they are 50-100 MB each).
+installers/
+portable/
+*.exe
+*.msi
+*.deb
+*.rpm
+*.dmg
+
+# Readora temporary files left by an interrupted save
+.readora-*.tmp
+
+# IntelliJ IDEA
+.idea/
+*.iml.bak
+.kotlin
+
+# Eclipse
+.apt_generated
+.factorypath
+.settings
+.springBeans
+.sts4-cache
+# .classpath and .project are intentionally tracked - they configure the
+# Java language server for VS Code so imports resolve.
+!.classpath
+!.project
+
+# VS Code (settings.json is tracked: it carries java.project.referencedLibraries)
+.vscode/*
+!.vscode/settings.json
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+# OS
+.DS_Store
+Thumbs.db

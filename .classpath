@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<!-- Source folders -->
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test"/>
+	<!-- Resources (icons / fonts bundled at root of classpath) -->
+	<classpathentry kind="src" path="resources"/>
+	<!-- External JARs in libs/ (paths are project-relative → portable) -->
+	<classpathentry kind="lib" path="libs/pdfbox-app-3.0.7.jar"/>
+	<classpathentry kind="lib" path="libs/flatlaf-3.7.1.jar"/>
+	<classpathentry kind="lib" path="libs/flatlaf-intellij-themes-3.7.1.jar"/>
+	<!-- JDK (inherited from workspace default) -->
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<!-- Compiled output -->
+	<classpathentry kind="output" path="out/production/Readora__the_pdf_app"/>
+</classpath>
