@@ -1,5 +1,6 @@
 package viewer.ops;
 
+import ui.Dialogs;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import ui.Ui;
 import viewer.PdfSession;
@@ -29,12 +30,12 @@ public final class SearchOps extends Ops {
 
     public void search() {
         if (!requireDocument()) return;
-        String q = JOptionPane.showInputDialog(parent, "Enter text to search", "Search Text",
+        String q = Dialogs.showInputDialog(parent, "Enter text to search", "Search Text",
                 JOptionPane.PLAIN_MESSAGE);
         if (q == null) return;
         q = q.trim();
         if (q.isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "Search text cannot be empty.");
+            Dialogs.showMessageDialog(parent, "Search text cannot be empty.");
             return;
         }
         final String query = q;

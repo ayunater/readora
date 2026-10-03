@@ -1,150 +1,54 @@
 package rightpanel;
 
-import com.formdev.flatlaf.intellijthemes.*;
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 
 /**
- * Thin wrapper around FlatLaf's IntelliJ theme pack that maps a
- * human-readable theme name (as shown in the Settings screen's theme
- * dropdown) to the matching {@code Flat*IJTheme.setup()} call.
+ * Readora's two themes. Both are custom FlatLaf themes built from the app
+ * icon's palette (near-black navy, with a blue -> violet -> magenta
+ * accent); the colour values live in {@code resources/theme/*.properties}.
  *
- * {@code setup()} installs the theme as the active Swing LookAndFeel; it
- * does not retroactively re-skin already-visible components. Callers
- * that apply a theme to a running UI (rather than at startup, before
- * any components exist) also need to call
- * {@code SwingUtilities.updateComponentTreeUI(...)} afterwards — see
- * {@code Main.refreshTheme()} for how this app does that.
- *
- * <p><b>Caveat:</b> {@link #applyTheme(String)} silently does nothing if
- * {@code themeName} doesn't exactly match one of the {@link #THEMES}
- * entries (no {@code default} case in the switch, and the surrounding
- * try/catch only guards against exceptions, not unmatched names). Only
- * pass values that came from {@link #THEMES} or were previously saved
- * from it.
+ * <p>This replaces the 17 third-party IntelliJ themes: one identity, in a
+ * dark and a light variant, so every screen and dialog reads as Readora.</p>
  */
-public class ThemeManager {
+public final class ThemeManager {
+
+    public static final String DARK = "Readora Dark";
+    public static final String LIGHT = "Readora Light";
+    public static final String[] THEMES = {DARK, LIGHT};
+
+    private static boolean registered;
+
+    private ThemeManager() { }
+
+    public static boolean isKnown(String name) {
+        return DARK.equals(name) || LIGHT.equals(name);
+    }
+
+    public static boolean isDark(String name) {
+        return !LIGHT.equals(name);
+    }
 
     /**
-     * Every theme name this app supports, in the exact form expected by
-     * {@link #applyTheme(String)} and used to populate the theme
-     * dropdown in the Settings screen. Grouped into light themes then
-     * dark themes for the dropdown's sake; the split is cosmetic only.
-     */
-    public static final String[] THEMES = {
-            //light
-            "Arc",
-            "Cyan Light",
-            "Light Flat",
-            "Solarized Light",
-            //dark
-            "Arc Dark",
-            "Carbon",
-            "Cobalt 2",
-            "Dracula",
-            "Gradianto Deep Ocean",
-            "Gradianto Midnight Blue",
-            "Gruvbox Dark Hard",
-            "Material Design Dark",
-            "Monokai Pro",
-            "Nord",
-            "One Dark",
-            "Solarized Dark",
-            "Xcode Dark"
-    };
-
-
-    /**
-     * Installs the named FlatLaf theme as the application's active
-     * LookAndFeel. Must be called before any Swing components are
-     * created for it to take effect on them automatically; for an
-     * already-running UI, follow this with
-     * {@code SwingUtilities.updateComponentTreeUI(rootComponent)} to
-     * re-skin existing components.
-     *
-     * @param themeName one of the exact strings in {@link #THEMES};
-     *                  any other value is silently ignored (see class
-     *                  javadoc caveat)
+     * Installs the named theme (anything unknown falls back to dark).
+     * Call before creating windows at startup; at runtime follow it with
+     * {@code Main.refreshTheme()} to repaint what is already on screen.
      */
     public static void applyTheme(String themeName) {
-
         try {
-
-            switch(themeName) {
-
-                //light
-
-                case "Arc":
-                    FlatArcIJTheme.setup();
-                    break;
-
-                case "Cyan Light":
-                    FlatCyanLightIJTheme.setup();
-                    break;
-
-                case "Light Flat":
-                    FlatLightFlatIJTheme.setup();
-                    break;
-
-                case "Solarized Light":
-                    FlatSolarizedLightIJTheme.setup();
-                    break;
-
-                //dark
-
-                case "Arc Dark":
-                    FlatArcDarkIJTheme.setup();
-                    break;
-
-                case "Carbon":
-                    FlatCarbonIJTheme.setup();
-                    break;
-
-                case "Cobalt 2":
-                    FlatCobalt2IJTheme.setup();
-                    break;
-
-                case "Dracula":
-                    FlatDraculaIJTheme.setup();
-                    break;
-
-                case "Gradianto Deep Ocean":
-                    FlatGradiantoDeepOceanIJTheme.setup();
-                    break;
-
-                case "Gradianto Midnight Blue":
-                    FlatGradiantoMidnightBlueIJTheme.setup();
-                    break;
-
-                case "Gruvbox Dark Hard":
-                    FlatGruvboxDarkHardIJTheme.setup();
-                    break;
-
-                case "Material Design Dark":
-                    FlatMaterialDesignDarkIJTheme.setup();
-                    break;
-
-                case "Monokai Pro":
-                    FlatMonokaiProIJTheme.setup();
-                    break;
-
-                case "Nord":
-                    FlatNordIJTheme.setup();
-                    break;
-
-                case "One Dark":
-                    FlatOneDarkIJTheme.setup();
-                    break;
-
-                case "Solarized Dark":
-                    FlatSolarizedDarkIJTheme.setup();
-                    break;
-
-                case "Xcode Dark":
-                    FlatXcodeDarkIJTheme.setup();
-                    break;
+            if (!registered) {
+                // Loads theme/FlatDarkLaf.properties and theme/FlatLightLaf.properties from the classpath.
+                FlatLaf.registerCustomDefaultsSource("theme");
+                registered = true;
             }
-
+            if (isDark(themeName)) {
+                FlatDarkLaf.setup();
+            } else {
+                FlatLightLaf.setup();
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Could not apply theme '" + themeName + "': " + e.getMessage());
         }
     }
 }

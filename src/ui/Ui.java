@@ -26,23 +26,48 @@ public final class Ui {
     /** Standard padding inside a screen. */
     public static final int PAD = 20;
 
+    /** Brand gradient, sampled from the app icon: blue -> violet -> magenta. */
+    public static final Color BLUE = new Color(0x4FA3FF);
+    public static final Color VIOLET = new Color(0x6D5CFF);
+    public static final Color MAGENTA = new Color(0xD060F6);
+
     private Ui() { }
 
     // ------------------------------------------------------------------
     // Colours
     // ------------------------------------------------------------------
 
+    /** True when the active theme has a dark background. */
+    public static boolean isDark() {
+        Color base = UIManager.getColor("Panel.background");
+        if (base == null) return true;
+        return (base.getRed() * 299 + base.getGreen() * 587 + base.getBlue() * 114) / 1000 < 140;
+    }
+
     /**
-     * A surface colour slightly lifted from the current panel background.
-     * Brightens dark themes and darkens light ones, always clamped to the
-     * valid 0-255 range (the old unclamped "+10" crashed on light themes).
+     * A card/sidebar surface sitting above the page background: a touch
+     * lighter on dark themes, white on light ones. Always a valid colour
+     * (the old unclamped "+10" threw on light themes).
      */
     public static Color raised() {
         Color base = UIManager.getColor("Panel.background");
         if (base == null) base = Color.DARK_GRAY;
-        int luma = (base.getRed() * 299 + base.getGreen() * 587 + base.getBlue() * 114) / 1000;
-        int d = luma < 140 ? 10 : -10;
+        if (!isDark()) return Color.WHITE;
+        return new Color(clamp(base.getRed() + 10), clamp(base.getGreen() + 10), clamp(base.getBlue() + 10));
+    }
+
+    /** A recessed surface for the area pages are drawn on, so white pages stand out in both themes. */
+    public static Color sunken() {
+        Color base = UIManager.getColor("Panel.background");
+        if (base == null) base = Color.DARK_GRAY;
+        int d = isDark() ? -4 : -12;
         return new Color(clamp(base.getRed() + d), clamp(base.getGreen() + d), clamp(base.getBlue() + d));
+    }
+
+    /** The theme accent (violet). */
+    public static Color accent() {
+        Color c = UIManager.getColor("Component.accentColor");
+        return c != null ? c : VIOLET;
     }
 
     /** Muted text colour for subtitles and hints. */
@@ -126,12 +151,61 @@ public final class Ui {
         b.setPreferredSize(new Dimension(Math.max(110, b.getPreferredSize().width + 24), CONTROL_H));
     }
 
-    /** A rounded button with the accent colour, used for the main action on a screen. */
+    /** The main action on a screen or dialog: a button filled with the brand gradient. */
     public static JButton primaryButton(String text) {
-        JButton b = button(text);
-        b.putClientProperty("FlatLaf.style",
-                "arc:" + CONTROL_ARC + "; background:$Component.accentColor; foreground:#ffffff; borderWidth:0");
+        GradientButton b = new GradientButton(text);
+        b.setPreferredSize(new Dimension(Math.max(110, b.getPreferredSize().width + 24), CONTROL_H));
         return b;
+    }
+
+    /** Rounded button painted with the icon's blue -> violet -> magenta gradient. */
+    public static final class GradientButton extends JButton {
+        GradientButton(String text) {
+            super(text);
+            setFont(AppFonts.body(Font.BOLD, 14));
+            setForeground(Color.WHITE);
+            setFocusPainted(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g0) {
+            Graphics2D g = (Graphics2D) g0.create();
+            try {
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight();
+                float[] stops = {0f, 0.5f, 1f};
+                Color[] cols = {BLUE, VIOLET, MAGENTA};
+                g.setPaint(new LinearGradientPaint(0, 0, w, 0, stops, cols));
+                if (!isEnabled()) g.setComposite(AlphaComposite.SrcOver.derive(0.35f));
+                g.fillRoundRect(0, 0, w, h, CONTROL_ARC, CONTROL_ARC);
+                g.setComposite(AlphaComposite.SrcOver);
+                if (getModel().isPressed()) {
+                    g.setColor(new Color(0, 0, 0, 55));
+                    g.fillRoundRect(0, 0, w, h, CONTROL_ARC, CONTROL_ARC);
+                } else if (getModel().isRollover()) {
+                    g.setColor(new Color(255, 255, 255, 38));
+                    g.fillRoundRect(0, 0, w, h, CONTROL_ARC, CONTROL_ARC);
+                }
+                if (hasFocus()) {
+                    g.setColor(new Color(255, 255, 255, 170));
+                    g.setStroke(new BasicStroke(2f));
+                    g.drawRoundRect(2, 2, w - 5, h - 5, CONTROL_ARC - 2, CONTROL_ARC - 2);
+                }
+            } finally {
+                g.dispose();
+            }
+            super.paintComponent(g0);
+        }
+    }
+
+    /** The app icon (for window title bars), or null if the resource is missing. */
+    public static Image appIcon() {
+        java.net.URL url = Ui.class.getResource("/logo.png");
+        return url == null ? null : new ImageIcon(url).getImage();
     }
 
     /** A large rounded tile button (Home quick actions, Tools grid). Height comes from the layout. */
@@ -209,6 +283,11 @@ public final class Ui {
         sp.putClientProperty("FlatLaf.style", "arc:" + ARC);
         sp.getVerticalScrollBar().setUnitIncrement(18);
         sp.getHorizontalScrollBar().setUnitIncrement(18);
+    }
+
+    /** Gives a scrolled view the inner padding a bordered, rounded scroll card needs. */
+    public static void padView(JComponent view) {
+        view.setBorder(BorderFactory.createEmptyBorder(GAP, GAP, GAP, GAP));
     }
 
     /** Centred row of buttons shown at the bottom of a screen. */

@@ -1,5 +1,6 @@
 package rightpanel;
 
+import ui.Dialogs;
 import app.Main;
 import store.FileListStore;
 import ui.Ui;
@@ -126,7 +127,7 @@ public abstract class FileListScreen extends JPanel {
         JButton clear = Ui.button("Clear");
         clear.addActionListener(e -> {
             if (entries.isEmpty()) return;
-            int ok = JOptionPane.showConfirmDialog(this, "Clear the whole list?", "Confirm",
+            int ok = Dialogs.showConfirmDialog(this, "Clear the whole list?", "Confirm",
                     JOptionPane.YES_NO_OPTION);
             if (ok == JOptionPane.YES_OPTION) { store.clear(); reload(); }
         });
@@ -164,11 +165,11 @@ public abstract class FileListScreen extends JPanel {
     private void openSelected() {
         FileListStore.Entry e = selected();
         if (e == null) {
-            JOptionPane.showMessageDialog(this, "Select a file first.");
+            Dialogs.showMessageDialog(this, "Select a file first.");
             return;
         }
         if (!e.exists()) {
-            int r = JOptionPane.showConfirmDialog(this,
+            int r = Dialogs.showConfirmDialog(this,
                     "This file no longer exists:\n" + e.path() + "\n\nRemove it from the list?",
                     "File not found", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (r == JOptionPane.YES_OPTION) { store.remove(e.file); reload(); }
@@ -177,7 +178,7 @@ public abstract class FileListScreen extends JPanel {
         try {
             main.showPdf(e.file);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
+            Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -185,7 +186,7 @@ public abstract class FileListScreen extends JPanel {
     private void removeSelected() {
         FileListStore.Entry e = selected();
         if (e == null) {
-            JOptionPane.showMessageDialog(this, "Select a file first.");
+            Dialogs.showMessageDialog(this, "Select a file first.");
             return;
         }
         store.remove(e.file);

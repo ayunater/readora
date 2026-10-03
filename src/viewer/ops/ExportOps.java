@@ -1,5 +1,6 @@
 package viewer.ops;
 
+import ui.Dialogs;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -82,14 +83,14 @@ public final class ExportOps extends Ops {
 
     private int askDpi() {
         JTextField f = new JTextField("200");
-        if (JOptionPane.showConfirmDialog(parent, f, "Enter DPI (50-600)", JOptionPane.OK_CANCEL_OPTION)
+        if (Dialogs.showConfirmDialog(parent, f, "Enter DPI (50-600)", JOptionPane.OK_CANCEL_OPTION)
                 != JOptionPane.OK_OPTION) return -1;
         try {
             int dpi = Integer.parseInt(f.getText().trim());
             if (dpi < 50 || dpi > 600) throw new NumberFormatException();
             return dpi;
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(parent, "DPI must be a number between 50 and 600.");
+            Dialogs.showMessageDialog(parent, "DPI must be a number between 50 and 600.");
             return -1;
         }
     }
@@ -101,14 +102,14 @@ public final class ExportOps extends Ops {
         p.add(s);
         p.add(new JLabel("End page"));
         p.add(e);
-        if (JOptionPane.showConfirmDialog(parent, p, "Page range", JOptionPane.OK_CANCEL_OPTION)
+        if (Dialogs.showConfirmDialog(parent, p, "Page range", JOptionPane.OK_CANCEL_OPTION)
                 != JOptionPane.OK_OPTION) return null;
         try {
             int a = Integer.parseInt(s.getText().trim()), b = Integer.parseInt(e.getText().trim());
             if (a < 1 || b > session.pageCount() || a > b) throw new NumberFormatException();
             return new int[]{a, b};
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(parent, "Enter a valid page range (1-" + session.pageCount() + ").");
+            Dialogs.showMessageDialog(parent, "Enter a valid page range (1-" + session.pageCount() + ").");
             return null;
         }
     }
@@ -128,7 +129,7 @@ public final class ExportOps extends Ops {
         p.add(s);
         p.add(new JLabel("End page:"));
         p.add(e);
-        if (JOptionPane.showConfirmDialog(parent, p, "Export text", JOptionPane.OK_CANCEL_OPTION,
+        if (Dialogs.showConfirmDialog(parent, p, "Export text", JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
 
         int start, end;
@@ -136,11 +137,11 @@ public final class ExportOps extends Ops {
             start = Integer.parseInt(s.getText().trim());
             end = Integer.parseInt(e.getText().trim());
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(parent, "Enter valid page numbers.");
+            Dialogs.showMessageDialog(parent, "Enter valid page numbers.");
             return;
         }
         if (start < 1 || end > session.pageCount() || start > end) {
-            JOptionPane.showMessageDialog(parent, "Invalid page range.");
+            Dialogs.showMessageDialog(parent, "Invalid page range.");
             return;
         }
         String kind = (String) format.getSelectedItem();

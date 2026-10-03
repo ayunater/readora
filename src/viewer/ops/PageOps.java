@@ -1,5 +1,6 @@
 package viewer.ops;
 
+import ui.Dialogs;
 import dialogs.PageOrganizerDialog;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import ui.Ui;
@@ -49,7 +50,7 @@ public final class PageOps extends Ops {
         if (!requireDocument()) return;
         final int total = session.pageCount();
         if (total < 2) {
-            JOptionPane.showMessageDialog(parent, "This PDF has only one page, so there is nothing to split.");
+            Dialogs.showMessageDialog(parent, "This PDF has only one page, so there is nothing to split.");
             return;
         }
         JTextField points = new JTextField(String.valueOf(total / 2), 20);
@@ -58,7 +59,7 @@ public final class PageOps extends Ops {
         p.add(new JLabel("<html>Split <b>after</b> these pages (comma-separated).<br>"
                 + "Example: <b>3, 7</b> makes pages 1-3, 4-7 and 8-" + total + ".</html>"), BorderLayout.NORTH);
         p.add(points, BorderLayout.CENTER);
-        if (JOptionPane.showConfirmDialog(parent, p, "Split PDF", JOptionPane.OK_CANCEL_OPTION,
+        if (Dialogs.showConfirmDialog(parent, p, "Split PDF", JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
 
         TreeSet<Integer> cuts = new TreeSet<>();
@@ -70,11 +71,11 @@ public final class PageOps extends Ops {
                 cuts.add(n);
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(parent, "Enter page numbers between 1 and " + (total - 1) + ".");
+            Dialogs.showMessageDialog(parent, "Enter page numbers between 1 and " + (total - 1) + ".");
             return;
         }
         if (cuts.isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "Enter at least one split point.");
+            Dialogs.showMessageDialog(parent, "Enter at least one split point.");
             return;
         }
         File folder = chooseFolder("Choose output folder");

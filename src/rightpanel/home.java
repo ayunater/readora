@@ -1,5 +1,6 @@
 package rightpanel;
 
+import ui.Dialogs;
 import app.Main;
 import store.FileListStore;
 import ui.Ui;
@@ -116,14 +117,14 @@ public class home extends JPanel {
         if (row < 0 || row >= entries.size()) return;
         FileListStore.Entry e = entries.get(row);
         if (!e.exists()) {
-            JOptionPane.showMessageDialog(this, "This file no longer exists:\n" + e.path(),
+            Dialogs.showMessageDialog(this, "This file no longer exists:\n" + e.path(),
                     "File not found", JOptionPane.WARNING_MESSAGE);
             return;
         }
         try {
             main.showPdf(e.file);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
+            Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }

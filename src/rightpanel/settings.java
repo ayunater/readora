@@ -1,5 +1,6 @@
 package rightpanel;
 
+import ui.Dialogs;
 import app.AppInfo;
 import app.Main;
 import store.AppSettings;
@@ -18,7 +19,6 @@ import java.util.Set;
 public class settings extends JPanel {
 
     private final Main main;
-    private final JComboBox<String> themeCombo = new JComboBox<>(ThemeManager.THEMES);
     private final JCheckBox rememberRecent = new JCheckBox("Remember recent files");
     private final JCheckBox confirmExit = new JCheckBox("Confirm before exit");
 
@@ -38,17 +38,23 @@ public class settings extends JPanel {
         column.setOpaque(false);
         column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
 
-        // ---- Appearance ----
-        themeCombo.setSelectedItem(AppSettings.theme());
-        Ui.styleCombo(themeCombo);
-        JButton apply = Ui.primaryButton("Apply Theme");
-        apply.addActionListener(e -> {
-            String theme = (String) themeCombo.getSelectedItem();
-            ThemeManager.applyTheme(theme);
-            AppSettings.set("theme", theme);
-            main.refreshTheme();
-        });
-        column.add(group("Appearance", row(themeCombo, apply)));
+        // ---- Appearance: Readora Dark / Readora Light, applied the moment you pick one ----
+        ButtonGroup themeGroup = new ButtonGroup();
+        JPanel themeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        themeRow.setOpaque(false);
+        for (String name : ThemeManager.THEMES) {
+            JToggleButton t = new JToggleButton(name.replace("Readora ", ""));
+            Ui.styleButton(t);
+            t.setSelected(ThemeManager.isDark(name) == Ui.isDark());   // reflects what is actually applied
+            t.addActionListener(e -> {
+                ThemeManager.applyTheme(name);
+                AppSettings.set("theme", name);
+                main.refreshTheme();
+            });
+            themeGroup.add(t);
+            themeRow.add(t);
+        }
+        column.add(group("Appearance", themeRow));
 
         // ---- Behaviour ----
         rememberRecent.setSelected(AppSettings.rememberRecent());
@@ -68,7 +74,7 @@ public class settings extends JPanel {
         JButton clearRecent = Ui.button("Clear Recent Files");
         clearRecent.addActionListener(e -> {
             recent.STORE.clear();
-            JOptionPane.showMessageDialog(this, "Recent history cleared.");
+            Dialogs.showMessageDialog(this, "Recent history cleared.");
         });
         JButton clearCache = Ui.button("Clear Cache");
         clearCache.addActionListener(e -> clearCache());
@@ -77,7 +83,7 @@ public class settings extends JPanel {
 
         // ---- About ----
         JButton about = Ui.button("About " + AppInfo.NAME);
-        about.addActionListener(e -> JOptionPane.showMessageDialog(this,
+        about.addActionListener(e -> Dialogs.showMessageDialog(this,
                 AppInfo.NAME + " v" + AppInfo.VERSION + "\n"
                         + "A modern PDF utility for reading, organizing,\n"
                         + "converting, and managing PDF documents.\n\n"
@@ -90,11 +96,11 @@ public class settings extends JPanel {
         JPanel top = new JPanel(new BorderLayout());
         top.setOpaque(false);
         top.add(column, BorderLayout.NORTH);
+        Ui.padView(top);
         JScrollPane scroll = new JScrollPane(top);
-        scroll.setBorder(null);
+        Ui.styleScroll(scroll);                       // same rounded frame as the Recent table
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
-        scroll.getVerticalScrollBar().setUnitIncrement(18);
         add(scroll, BorderLayout.CENTER);
     }
 
@@ -108,7 +114,7 @@ public class settings extends JPanel {
                 if (f.isFile() && !KEEP.contains(f.getName()) && f.delete()) removed++;
             }
         }
-        JOptionPane.showMessageDialog(this, removed == 0
+        Dialogs.showMessageDialog(this, removed == 0
                 ? "Cache is already empty."
                 : "Cache cleared (" + removed + " file" + (removed == 1 ? "" : "s") + ").");
     }

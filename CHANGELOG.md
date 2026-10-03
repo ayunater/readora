@@ -6,6 +6,18 @@ All notable changes to Readora are documented here. The format follows
 ## [1.0.0] - first public release
 
 ### Changed
+- **New app icon** (also used for the window, title bars, dialogs and installers; `.ico` regenerated at 16-256 px).
+- **One custom theme in two variants, replacing the 17 third-party IntelliJ themes.** *Readora Dark* and
+  *Readora Light* use the icon's palette (near-black navy, blue -> violet -> magenta accent). The Settings
+  theme picker applies instantly. The bundled `flatlaf-intellij-themes` jar (and its size) is gone; a
+  previously saved theme name falls back to dark.
+- **Readora's own dialogs everywhere.** `JOptionPane`, `JFileChooser` and `JColorChooser` are replaced by
+  `ui.Dialogs`, `ui.AppFileChooser` and `ui.AppColorChooser` (same method signatures, so call sites only
+  changed class name): themed title bar and icon, gradient message badges, wrapped text, and the gradient
+  primary button. Window title bars now follow the theme instead of the operating system.
+- Tools and Settings now sit in the same rounded, bordered scroll card as the Recent table; the Tools header
+  stays fixed above it instead of scrolling away.
+- Sidebar label "Setting" is now "Settings"; the Page Organizer subtitle no longer says "Visual Studio".
 - **Viewer split into focused classes** (new `viewer` and `viewer.ops` packages) in place of a single
   5,300-line `pdfViewer` class: `PdfSession`, `RenderService`, `DocumentView`, `PageCanvas`,
   `ThumbnailPanel`, `ViewerHeader`, `ViewerControls`, plus one operations class per concern
@@ -40,6 +52,10 @@ All notable changes to Readora are documented here. The format follows
 - **Settings > Clear Cache** no longer deletes your settings and Starred list.
 
 ### Fixed - other
+- **IMG to PDF ignored its fit-to-page sizing** and drew every image at its raw pixel size, so large photos
+  ran off the page. Images are now scaled to fit and centred.
+- Merge PDF and IMG to PDF now ask before replacing an existing file, and Merge refuses an output name equal
+  to one of its inputs (which would corrupt the result).
 - The project did not compile: `openPageOrganizer()` was defined twice. About 700 lines of dead code
   (`extractPages` and three `legacy*` page methods) were removed.
 - Light themes crashed the sidebar colour calculation (unclamped RGB values above 255).

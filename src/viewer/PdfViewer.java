@@ -1,5 +1,7 @@
 package viewer;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
 import dialogs.PageOrganizerDialog;
 import rightpanel.recent;
 import rightpanel.starred;
@@ -178,7 +180,7 @@ public class PdfViewer extends JPanel {
             session.forgetPassword();
             openPdf(f);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Could not open \"" + f.getName() + "\":\n" + ex.getMessage(),
+            Dialogs.showMessageDialog(this, "Could not open \"" + f.getName() + "\":\n" + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -187,7 +189,7 @@ public class PdfViewer extends JPanel {
     public void resetPdfPassword() { session.forgetPassword(); }
 
     private void choosePdf() {
-        JFileChooser chooser = new JFileChooser(lastDirectory);
+        JFileChooser chooser = new AppFileChooser(lastDirectory);
         chooser.setFileFilter(new FileNameExtensionFilter("PDF Files", "pdf"));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
         File f = chooser.getSelectedFile();
@@ -200,7 +202,7 @@ public class PdfViewer extends JPanel {
         try {
             session.reload(this);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Could not reload the file:\n" + ex.getMessage(),
+            Dialogs.showMessageDialog(this, "Could not reload the file:\n" + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }

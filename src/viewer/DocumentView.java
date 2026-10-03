@@ -58,6 +58,13 @@ public final class DocumentView extends Ui.Card {
         installKeys();
     }
 
+    /** Pages are drawn on a recessed surface so the white sheets stand out in light and dark themes. */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        setBackground(Ui.sunken());
+    }
+
     // ------------------------------------------------------------------
     // Listeners
     // ------------------------------------------------------------------

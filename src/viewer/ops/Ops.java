@@ -1,5 +1,7 @@
 package viewer.ops;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
 import rightpanel.ProgressDialog;
 import viewer.PdfSession;
 
@@ -32,7 +34,7 @@ public abstract class Ops {
     /** Shows "Open a PDF first." and returns false when nothing is open. */
     protected boolean requireDocument() {
         if (!session.isOpen()) {
-            JOptionPane.showMessageDialog(parent, "Open a PDF first.", "No PDF Open",
+            Dialogs.showMessageDialog(parent, "Open a PDF first.", "No PDF Open",
                     JOptionPane.INFORMATION_MESSAGE);
             return false;
         }
@@ -40,13 +42,13 @@ public abstract class Ops {
     }
 
     protected void info(String message, String title) {
-        JOptionPane.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
+        Dialogs.showMessageDialog(parent, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
     protected void error(String message, Throwable t) {
         if (t != null) t.printStackTrace();
         String detail = t == null ? "" : ": " + rootMessage(t);
-        JOptionPane.showMessageDialog(parent, message + detail, "Error", JOptionPane.ERROR_MESSAGE);
+        Dialogs.showMessageDialog(parent, message + detail, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     protected static String rootMessage(Throwable t) {
@@ -82,7 +84,7 @@ public abstract class Ops {
 
     /** Ask where to save a file; adds the extension if missing; confirms overwrite. Null if cancelled. */
     protected File chooseSave(String title, String suggestedName, String description, String extension) {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new AppFileChooser();
         chooser.setDialogTitle(title);
         chooser.setSelectedFile(new File(suggestedName));
         chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(description, extension));
@@ -96,13 +98,13 @@ public abstract class Ops {
 
     protected boolean confirmOverwrite(File f) {
         if (!f.exists()) return true;
-        return JOptionPane.showConfirmDialog(parent, f.getName() + " already exists. Replace it?",
+        return Dialogs.showConfirmDialog(parent, f.getName() + " already exists. Replace it?",
                 "Confirm overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE)
                 == JOptionPane.YES_OPTION;
     }
 
     protected File chooseFolder(String title) {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new AppFileChooser();
         chooser.setDialogTitle(title);
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         return chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION ? chooser.getSelectedFile() : null;

@@ -1,5 +1,6 @@
 package viewer;
 
+import ui.Dialogs;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
@@ -126,7 +127,7 @@ public final class PdfSession implements AutoCloseable {
         panel.add(new JLabel((retry ? "Incorrect password. " : "") + "\"" + f.getName()
                 + "\" is password protected."), BorderLayout.NORTH);
         panel.add(field, BorderLayout.CENTER);
-        int r = JOptionPane.showConfirmDialog(parent, panel, "Password required",
+        int r = Dialogs.showConfirmDialog(parent, panel, "Password required",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         return r == JOptionPane.OK_OPTION ? new String(field.getPassword()) : null;
     }

@@ -8,7 +8,6 @@
 	<!-- External JARs in libs/ (paths are project-relative → portable) -->
 	<classpathentry kind="lib" path="libs/pdfbox-app-3.0.7.jar"/>
 	<classpathentry kind="lib" path="libs/flatlaf-3.7.1.jar"/>
-	<classpathentry kind="lib" path="libs/flatlaf-intellij-themes-3.7.1.jar"/>
 	<!-- JDK (inherited from workspace default) -->
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<!-- Compiled output -->

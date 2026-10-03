@@ -1,5 +1,6 @@
 package viewer.ops;
 
+import ui.Dialogs;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
@@ -90,7 +91,7 @@ public final class InfoOps extends Ops {
             area.setCaretPosition(0);
             JScrollPane sp = new JScrollPane(area);
             sp.setPreferredSize(new Dimension(500, 350));
-            JOptionPane.showMessageDialog(parent, sp, "Fonts Used", JOptionPane.INFORMATION_MESSAGE);
+            Dialogs.showMessageDialog(parent, sp, "Fonts Used", JOptionPane.INFORMATION_MESSAGE);
         }, "Could not read fonts");
     }
 
@@ -107,7 +108,7 @@ public final class InfoOps extends Ops {
         addRow(panel, "Creator:", creator);
         addRow(panel, "Producer:", producer);
         addRow(panel, "Keywords:", keywords);
-        if (JOptionPane.showConfirmDialog(parent, panel, "Edit Metadata", JOptionPane.OK_CANCEL_OPTION,
+        if (Dialogs.showConfirmDialog(parent, panel, "Edit Metadata", JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
         try {
             session.rewrite(doc -> {

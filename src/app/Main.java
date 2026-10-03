@@ -1,5 +1,7 @@
 package app;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
@@ -245,7 +247,7 @@ public class Main extends JFrame implements ActionListener {
                 leftBottomPanel.putClientProperty("FlatLaf.style", "arc: 20");
 
                 settingButton = new JButton(
-                                "Setting",
+                                "Settings",
                                 loadIcon("/settings.png"));
 
                 addComponent(leftBottomPanel, settingButton,
@@ -377,7 +379,7 @@ public class Main extends JFrame implements ActionListener {
                         try {
                                 showPdf(f);
                         } catch (IOException ex) {
-                                JOptionPane.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
+                                Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
                                                 "Error", JOptionPane.ERROR_MESSAGE);
                         }
                 });
@@ -496,7 +498,7 @@ public class Main extends JFrame implements ActionListener {
                 text = collapsed ? "" : "Tools";
                 toolsButton.setText(text);
 
-                text = collapsed ? "" : "Setting";
+                text = collapsed ? "" : "Settings";
                 settingButton.setText(text);
 
                 text = collapsed ? "" : "Exit";
@@ -535,7 +537,7 @@ public class Main extends JFrame implements ActionListener {
                                 boolean confirmExit = AppSettings.confirmExit();
                                 if (confirmExit) {
 
-                                        int choice = JOptionPane.showConfirmDialog(
+                                        int choice = Dialogs.showConfirmDialog(
                                                         this,
                                                         "Do you want to close Readora?",
                                                         "Exit",
@@ -697,7 +699,7 @@ public class Main extends JFrame implements ActionListener {
 
         /** Home's "Open PDF" action: choose a file, then show it in the viewer. */
         private void openPdfDialog() {
-                JFileChooser chooser = new JFileChooser();
+                JFileChooser chooser = new AppFileChooser();
                 chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
                 if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
                         return;
@@ -705,7 +707,7 @@ public class Main extends JFrame implements ActionListener {
                 try {
                         showPdf(chooser.getSelectedFile());
                 } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
+                        Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
                                         "Error", JOptionPane.ERROR_MESSAGE);
                 }
         }

@@ -1,5 +1,7 @@
 package rightpanel;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import viewer.PdfViewer;
@@ -136,8 +138,9 @@ public class tools extends JPanel implements ActionListener {
         ToolsPanel.setOpaque(false);
         ToolsPanel.setLayout(new BoxLayout(ToolsPanel, BoxLayout.Y_AXIS));
 
+        Ui.padView(ToolsPanel);
         pdfToolsScroll = new JScrollPane(ToolsPanel);
-        pdfToolsScroll.setBorder(null);
+        Ui.styleScroll(pdfToolsScroll);               // same rounded frame as the Recent table
 
         pdfToolsScroll.getVerticalScrollBar()
                 .setUnitIncrement(16);
@@ -148,10 +151,12 @@ public class tools extends JPanel implements ActionListener {
         pdfToolsScroll.setOpaque(false);
         add(pdfToolsScroll, BorderLayout.CENTER);
 
-        Ui.Header header = Ui.header("PDF Tools", "Convert, secure, analyze and manage PDFs");
-        header.setAlignmentX(Component.LEFT_ALIGNMENT);
-        ToolsPanel.add(header);
-        ToolsPanel.add(Box.createVerticalStrut(Ui.GAP));
+        // Header stays put above the scrolling card, like every other screen.
+        JPanel headerRow = new JPanel(new BorderLayout());
+        headerRow.setOpaque(false);
+        headerRow.setBorder(BorderFactory.createEmptyBorder(0, 0, Ui.GAP, 0));
+        headerRow.add(Ui.header("PDF Tools", "Convert, secure, analyze and manage PDFs"), BorderLayout.CENTER);
+        add(headerRow, BorderLayout.NORTH);
 
         pdfToolsPanel = createSectionPanel();
         organizePagesButton = createToolButton("Organize Pages");
@@ -264,6 +269,13 @@ public class tools extends JPanel implements ActionListener {
     }
 
     /** Builds a bold section heading label (e.g. "PDF Operations", "Security"). */
+    /** Asks before replacing an existing file. */
+    private boolean confirmReplace(File f) {
+        return !f.exists() || Dialogs.showConfirmDialog(this, f.getName() + " already exists. Replace it?",
+                "Confirm overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE)
+                == JOptionPane.YES_OPTION;
+    }
+
     private JLabel createSectionTitle(String text) {
         JLabel label = Ui.section(text);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -305,7 +317,7 @@ public class tools extends JPanel implements ActionListener {
 
         String command = e.getActionCommand();
 
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new AppFileChooser();
 
         switch (command) {
 
@@ -361,7 +373,7 @@ public class tools extends JPanel implements ActionListener {
                     // large files.
                     case "Merge PDF":
                         if (selectedFiles.length < 2) {
-                            JOptionPane.showMessageDialog(
+                            Dialogs.showMessageDialog(
                                     this,
                                     "Select at least two PDFs."
                             );
@@ -380,7 +392,7 @@ public class tools extends JPanel implements ActionListener {
                             return;
                         }
 
-                        JFileChooser saveChoose = new JFileChooser();
+                        JFileChooser saveChoose = new AppFileChooser();
 
                         saveChoose.setSelectedFile(
                                 new File("Merged.pdf")
@@ -395,6 +407,18 @@ public class tools extends JPanel implements ActionListener {
 
                         if (!outputFile.getName().toLowerCase().endsWith(".pdf")) {
                             outputFile = new File(outputFile.getAbsolutePath() + ".pdf");
+                        }
+                        // Never write over one of the files being merged (that would corrupt the result).
+                        for (File source : selectedFiles) {
+                            if (source.getAbsoluteFile().equals(outputFile.getAbsoluteFile())) {
+                                Dialogs.showMessageDialog(this,
+                                        "The merged file can't have the same name as one of the PDFs being merged.\nPlease choose a different name.",
+                                        "Choose another name", JOptionPane.WARNING_MESSAGE);
+                                return;
+                            }
+                        }
+                        if (!confirmReplace(outputFile)) {
+                            return;
                         }
 
                         PDFMergerUtility merger = new PDFMergerUtility();
@@ -439,7 +463,7 @@ public class tools extends JPanel implements ActionListener {
                                     // dialog below would show regardless.
                                     get();
 
-                                    JOptionPane.showMessageDialog(
+                                    Dialogs.showMessageDialog(
                                             tools.this,
                                             "Merged successfully."
                                     );
@@ -448,7 +472,7 @@ public class tools extends JPanel implements ActionListener {
 
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
-                                    JOptionPane.showMessageDialog(
+                                    Dialogs.showMessageDialog(
                                             tools.this,
                                             "Merge failed: " + ex.getMessage(),
                                             "Error",
@@ -625,14 +649,14 @@ public class tools extends JPanel implements ActionListener {
                     case "IMG to PDF":
 
                         if (selectedFiles == null || selectedFiles.length == 0) {
-                            JOptionPane.showMessageDialog(
+                            Dialogs.showMessageDialog(
                                     this,
                                     "Select one or more images first."
                             );
                             break;
                         }
 
-                        JFileChooser saveChooser = new JFileChooser();
+                        JFileChooser saveChooser = new AppFileChooser();
 
                         saveChooser.setSelectedFile(
                                 new File("output.pdf")
@@ -660,6 +684,9 @@ public class tools extends JPanel implements ActionListener {
                             outputFile = new File(
                                     outputFile.getAbsolutePath() + ".pdf"
                             );
+                        }
+                        if (!confirmReplace(outputFile)) {
+                            break;
                         }
 
                         ProgressDialog convertProgress =
@@ -735,12 +762,13 @@ public class tools extends JPanel implements ActionListener {
                                                              page
                                                      )) {
 
+                                            // Draw at the fitted size computed above, not the raw pixel size.
                                             stream.drawImage(
                                                     pdImage,
                                                     x,
                                                     y,
-                                                    image.getWidth(),
-                                                    image.getHeight()
+                                                    drawWidth,
+                                                    drawHeight
                                             );
                                         }
 
@@ -771,7 +799,7 @@ public class tools extends JPanel implements ActionListener {
                                 try {
                                     get();
 
-                                    JOptionPane.showMessageDialog(
+                                    Dialogs.showMessageDialog(
                                             tools.this,
                                             "PDF created successfully."
                                     );
@@ -781,7 +809,7 @@ public class tools extends JPanel implements ActionListener {
 
                                 } catch (Exception ex) {
 
-                                    JOptionPane.showMessageDialog(
+                                    Dialogs.showMessageDialog(
                                             tools.this,
                                             ex.getMessage(),
                                             "Error",

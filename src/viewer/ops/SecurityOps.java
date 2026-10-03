@@ -1,5 +1,6 @@
 package viewer.ops;
 
+import ui.Dialogs;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
@@ -50,14 +51,14 @@ public final class SecurityOps extends Ops {
         panel.add(new JLabel());
         for (JCheckBox b : boxes) { panel.add(b); panel.add(new JLabel()); }
 
-        if (JOptionPane.showConfirmDialog(parent, panel, title, JOptionPane.OK_CANCEL_OPTION,
+        if (Dialogs.showConfirmDialog(parent, panel, title, JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
         String u = new String(user.getPassword()), o = new String(owner.getPassword());
         if (u.isEmpty() || o.isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+            Dialogs.showMessageDialog(parent, "Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        if (u.equals(o) && JOptionPane.showConfirmDialog(parent, "User and Owner passwords are the same.\nContinue?",
+        if (u.equals(o) && Dialogs.showConfirmDialog(parent, "User and Owner passwords are the same.\nContinue?",
                 "Warning", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         applyProtection(u, o, boxes, successMessage);
     }
@@ -88,7 +89,7 @@ public final class SecurityOps extends Ops {
 
     public void removePassword() {
         if (!requireDocument()) return;
-        if (JOptionPane.showConfirmDialog(parent, "Remove password protection from this PDF?", "Confirm",
+        if (Dialogs.showConfirmDialog(parent, "Remove password protection from this PDF?", "Confirm",
                 JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             session.rewrite(doc -> doc.setAllSecurityToBeRemoved(true), null);
@@ -131,7 +132,7 @@ public final class SecurityOps extends Ops {
         PDDocument d = session.document();
         AccessPermission current = d.getCurrentAccessPermission();
         if (!current.isOwnerPermission()) {
-            JOptionPane.showMessageDialog(parent, """
+            Dialogs.showMessageDialog(parent, """
                     This PDF was opened using the user password.
                     Reopen the PDF using the owner password
                     to edit its security permissions.
@@ -148,14 +149,14 @@ public final class SecurityOps extends Ops {
         panel.add(owner);
         for (JCheckBox b : boxes) { panel.add(b); panel.add(new JLabel()); }
 
-        if (JOptionPane.showConfirmDialog(parent, panel, "Edit PDF Permissions", JOptionPane.OK_CANCEL_OPTION,
+        if (Dialogs.showConfirmDialog(parent, panel, "Edit PDF Permissions", JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
         String u = new String(user.getPassword()), o = new String(owner.getPassword());
         if (u.isEmpty() || o.isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "Passwords cannot be empty.");
+            Dialogs.showMessageDialog(parent, "Passwords cannot be empty.");
             return;
         }
-        if (u.equals(o) && JOptionPane.showConfirmDialog(parent, "User and Owner passwords are the same.\nContinue?",
+        if (u.equals(o) && Dialogs.showConfirmDialog(parent, "User and Owner passwords are the same.\nContinue?",
                 "Warning", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         applyProtection(u, o, boxes, "Permissions updated successfully.");
     }

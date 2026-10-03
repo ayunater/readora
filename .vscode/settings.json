@@ -9,11 +9,10 @@
     "resources"
   ],
 
-  // Tell JDT to add all three local JARs to the classpath
+  // Tell JDT to add the local JARs to the classpath
   "java.project.referencedLibraries": [
     "libs/pdfbox-app-3.0.7.jar",
-    "libs/flatlaf-3.7.1.jar",
-    "libs/flatlaf-intellij-themes-3.7.1.jar"
+    "libs/flatlaf-3.7.1.jar"
   ],
 
   // Match the JDK level set in IntelliJ (misc.xml says JDK_26)

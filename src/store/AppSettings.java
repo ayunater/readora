@@ -9,7 +9,7 @@ import java.util.Properties;
 /** Reads and writes {@code settings.properties}. The only place that touches that file. */
 public final class AppSettings {
 
-    public static final String DEFAULT_THEME = "Gruvbox Dark Hard";
+    public static final String DEFAULT_THEME = rightpanel.ThemeManager.DARK;
 
     private AppSettings() { }
 
@@ -42,7 +42,11 @@ public final class AppSettings {
         }
     }
 
-    public static String theme()          { return get("theme", DEFAULT_THEME); }
+    /** The saved theme; names from older versions (the 17 IntelliJ themes) fall back to dark. */
+    public static String theme() {
+        String t = get("theme", DEFAULT_THEME);
+        return rightpanel.ThemeManager.isKnown(t) ? t : DEFAULT_THEME;
+    }
     public static boolean rememberRecent() { return getBool("rememberRecent", true); }
     public static boolean confirmExit()    { return getBool("confirmExit", true); }
 

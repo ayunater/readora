@@ -1,5 +1,8 @@
 package viewer.ops;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
+import ui.AppColorChooser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -64,7 +67,7 @@ public final class WatermarkOps extends Ops {
     private void addWatermarkDialog(String initialType) throws IOException {
 
         if (!session.isOpen()) {
-            JOptionPane.showMessageDialog(
+            Dialogs.showMessageDialog(
                     parent,
                     "Open a PDF first."
             );
@@ -110,7 +113,7 @@ public final class WatermarkOps extends Ops {
         colorButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Color c = JColorChooser.showDialog(
+                Color c = AppColorChooser.pick(
                         parent,
                         "Choose watermark color",
                         selectedColor[0]
@@ -162,7 +165,7 @@ public final class WatermarkOps extends Ops {
 
         chooseImageButton.addActionListener(e -> {
 
-            JFileChooser imageChooser = new JFileChooser();
+            JFileChooser imageChooser = new AppFileChooser();
 
             imageChooser.setFileFilter(
                     new FileNameExtensionFilter(
@@ -447,7 +450,7 @@ public final class WatermarkOps extends Ops {
         mainPanel.add(leftPanel, BorderLayout.CENTER);
         mainPanel.add(rightPanel, BorderLayout.EAST);
 
-        int result = JOptionPane.showConfirmDialog(
+        int result = Dialogs.showConfirmDialog(
                 parent,
                 mainPanel,
                 "Add Watermark",
@@ -469,7 +472,7 @@ public final class WatermarkOps extends Ops {
             settings.text = watermarkArea.getText();
 
             if (settings.text == null || settings.text.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(
+                Dialogs.showMessageDialog(
                         parent,
                         "Enter watermark text."
                 );
@@ -483,7 +486,7 @@ public final class WatermarkOps extends Ops {
                     FontManager.getFontFile(family);
 
             if (fontFile == null) {
-                JOptionPane.showMessageDialog(
+                Dialogs.showMessageDialog(
                         parent,
                         "Font file not found."
                 );
@@ -497,7 +500,7 @@ public final class WatermarkOps extends Ops {
         } else {
 
             if (selectedImageFile[0] == null) {
-                JOptionPane.showMessageDialog(
+                Dialogs.showMessageDialog(
                         parent,
                         "Please choose an image."
                 );
@@ -556,7 +559,7 @@ public final class WatermarkOps extends Ops {
                     );
 
             if (settings.startPage > settings.endPage) {
-                JOptionPane.showMessageDialog(
+                Dialogs.showMessageDialog(
                         parent,
                         "Invalid page range."
                 );
@@ -564,7 +567,7 @@ public final class WatermarkOps extends Ops {
             }
         }
 
-        JFileChooser saveChooser = new JFileChooser();
+        JFileChooser saveChooser = new AppFileChooser();
         saveChooser.setDialogTitle("Save Watermarked PDF");
 
         saveChooser.setFileFilter(
@@ -599,7 +602,7 @@ public final class WatermarkOps extends Ops {
 
         if (output.exists()) {
 
-            int confirm = JOptionPane.showConfirmDialog(
+            int confirm = Dialogs.showConfirmDialog(
                     parent,
                     "File already exists. Replace it?",
                     "Confirm",
@@ -612,7 +615,7 @@ public final class WatermarkOps extends Ops {
         }
 
         if (output.equals(session.file())) {
-            JOptionPane.showMessageDialog(
+            Dialogs.showMessageDialog(
                     parent,
                     "Choose a different file name; the original is not overwritten."
             );
@@ -627,7 +630,7 @@ public final class WatermarkOps extends Ops {
             }
             return finalOutput;
         }, f -> {
-            JOptionPane.showMessageDialog(parent, "Watermark added successfully.");
+            Dialogs.showMessageDialog(parent, "Watermark added successfully.");
             open.accept(f);
         }, "Error applying watermark");
     }

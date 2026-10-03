@@ -1,5 +1,7 @@
 package dialogs;
 
+import ui.Dialogs;
+import ui.AppFileChooser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.rendering.ImageType;
@@ -55,7 +57,7 @@ public class PageOrganizerDialog extends JDialog {
          * Full organizer — all features visible and equally prominent.
          * Used by the "Organize" toolbar button and "Organize Pages" in the Tools screen.
          */
-        ORGANIZE("Page Organizer", "Visual Studio — reorder, rotate, delete & extract pages", "✦"),
+        ORGANIZE("Page Organizer", "Reorder, rotate, delete & extract pages", "✦"),
 
         /**
          * Focus mode for page reordering.
@@ -261,7 +263,7 @@ public class PageOrganizerDialog extends JDialog {
 
         // Mode icon badge
         JLabel modeIconLabel = new JLabel(mode.icon);
-        modeIconLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 22));
+        modeIconLabel.setFont(rightpanel.AppFonts.body(Font.PLAIN, 22));
         modeIconLabel.setForeground(getAccentColor());
         brandLeft.add(modeIconLabel);
 
@@ -537,7 +539,7 @@ public class PageOrganizerDialog extends JDialog {
 
     private JLabel makeTextLabel(String text, int style, int size) {
         JLabel l = new JLabel(text);
-        l.setFont(new Font(Font.SANS_SERIF, style, size));
+        l.setFont(rightpanel.AppFonts.body(style, size));
         return l;
     }
 
@@ -575,7 +577,7 @@ public class PageOrganizerDialog extends JDialog {
 
     private Color getAccentColor() {
         Color accent = UIManager.getColor("Component.accentColor");
-        return accent != null ? accent : new Color(52, 120, 246);
+        return accent != null ? accent : ui.Ui.accent();
     }
 
     private ImageIcon loadScaledIcon(String resourcePath, int w, int h) {
@@ -728,13 +730,13 @@ public class PageOrganizerDialog extends JDialog {
             if (item.isSelected && !item.isDeleted) selected.add(item);
         }
         if (selected.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
+            Dialogs.showMessageDialog(this,
                     "Please select at least one active page to extract.",
                     "No Pages Selected", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new AppFileChooser();
         chooser.setDialogTitle("Save Extracted Pages As");
         chooser.setFileFilter(new FileNameExtensionFilter("PDF Documents", "pdf"));
         String baseName = originalFile != null
@@ -762,12 +764,12 @@ public class PageOrganizerDialog extends JDialog {
                 progress.dispose();
                 try {
                     get();
-                    int opt = JOptionPane.showConfirmDialog(PageOrganizerDialog.this,
+                    int opt = Dialogs.showConfirmDialog(PageOrganizerDialog.this,
                             "Extracted " + selected.size() + " pages successfully.\nOpen the extracted PDF now?",
                             "Extraction Complete", JOptionPane.YES_NO_OPTION);
                     if (opt == JOptionPane.YES_OPTION) { dispose(); viewer.openGeneratedPDF(outFile); }
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(PageOrganizerDialog.this,
+                    Dialogs.showMessageDialog(PageOrganizerDialog.this,
                             "Failed to extract pages: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -784,13 +786,13 @@ public class PageOrganizerDialog extends JDialog {
             if (!item.isDeleted) activePages.add(item);
         }
         if (activePages.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
+            Dialogs.showMessageDialog(this,
                     "Cannot save an empty PDF. Please restore at least one page.",
                     "No Pages Left", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new AppFileChooser();
         chooser.setDialogTitle("Save Organized PDF");
         chooser.setFileFilter(new FileNameExtensionFilter("PDF Documents", "pdf"));
         String baseName = originalFile != null
@@ -821,7 +823,7 @@ public class PageOrganizerDialog extends JDialog {
                     dispose();
                     viewer.openGeneratedPDF(outFile);
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(PageOrganizerDialog.this,
+                    Dialogs.showMessageDialog(PageOrganizerDialog.this,
                             "Failed to save PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -836,14 +838,14 @@ public class PageOrganizerDialog extends JDialog {
     private boolean outputAllowed(File out) {
         try {
             if (originalFile != null && out.getCanonicalFile().equals(originalFile.getCanonicalFile())) {
-                JOptionPane.showMessageDialog(this,
+                Dialogs.showMessageDialog(this,
                         "Please choose a different file name.\nThe original PDF is never overwritten directly.",
                         "Choose another name", JOptionPane.WARNING_MESSAGE);
                 return false;
             }
         } catch (java.io.IOException ignored) { /* fall through to the overwrite check */ }
         if (out.exists()) {
-            return JOptionPane.showConfirmDialog(this, out.getName() + " already exists. Replace it?",
+            return Dialogs.showConfirmDialog(this, out.getName() + " already exists. Replace it?",
                     "Confirm overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE)
                     == JOptionPane.YES_OPTION;
         }
@@ -993,7 +995,7 @@ public class PageOrganizerDialog extends JDialog {
             JButton btn = new JButton(text);
             btn.setToolTipText(tooltip);
             btn.putClientProperty("FlatLaf.style", "arc: 12");
-            btn.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            btn.setFont(rightpanel.AppFonts.body(Font.PLAIN, 12));
             btn.setPreferredSize(new Dimension(30, 26));
             btn.setMargin(new Insets(1, 1, 1, 1));
             btn.setFocusable(false);

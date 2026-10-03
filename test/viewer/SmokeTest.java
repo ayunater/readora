@@ -25,6 +25,18 @@ public class SmokeTest {
         samples.mkdirs();
         makeSamples(samples);
 
+        // ---------- 0. Themes: both custom themes load and produce valid surfaces ----------
+        for (String theme : rightpanel.ThemeManager.THEMES) {
+            rightpanel.ThemeManager.applyTheme(theme);
+            boolean wantDark = rightpanel.ThemeManager.isDark(theme);
+            check("theme '" + theme + "': detected as " + (wantDark ? "dark" : "light"), ui.Ui.isDark() == wantDark);
+            check("theme '" + theme + "': accent is the icon violet",
+                  java.awt.Color.decode("#6D5CFF").equals(javax.swing.UIManager.getColor("Component.accentColor")));
+            java.awt.Color r = ui.Ui.raised(), sk = ui.Ui.sunken();     // used to throw on light themes
+            check("theme '" + theme + "': surfaces are valid colours", r != null && sk != null);
+        }
+        check("theme: old IntelliJ theme names are not accepted", !rightpanel.ThemeManager.isKnown("Gruvbox Dark Hard"));
+
         // ---------- 1. FileListStore: commas, unicode, legacy migration ----------
         File tsv = new File(tmp.toFile(), "recent.tsv"), csv = new File(tmp.toFile(), "recent.csv");
         // Use a non-ASCII character only if this machine's file-name encoding can represent it.

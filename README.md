@@ -51,7 +51,8 @@
 <td align="center" width="50%"><b>🛠️ Tools</b><br/><sub>Metadata, content, info, watermark, print</sub><br/><br/><img src="assets/tools-2.png" width="100%"/></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><b>📖 Viewer</b><br/><sub>Lazy-rendered pages, thumbnails, zoom and fit, search highlights</sub><br/><br/><img src="assets/viewer.png" width="70%"/></td>
+<td align="center"><b>📖 Viewer — Dark</b><br/><sub>Lazy-rendered pages, thumbnails, zoom and fit</sub><br/><br/><img src="assets/viewer.png" width="95%"/></td>
+<td align="center"><b>📖 Viewer — Light</b><br/><sub>The same screen in Readora Light</sub><br/><br/><img src="assets/viewer-light.png" width="95%"/></td>
 </tr>
 </table>
 
@@ -98,7 +99,8 @@ Readora is a Java Swing desktop application for viewing and working with PDF doc
 
 **⭐ Recent, Starred & Settings**
 - Cached, asynchronously-loaded thumbnails
-- Selectable FlatLaf themes and configurable preferences
+- Two custom themes built from the app icon — **Readora Dark** and **Readora Light** — switchable instantly in Settings, with matching title bars, dialogs and file pickers (no stock Swing dialogs)
+- Configurable preferences
 
 <br/>
 
@@ -134,14 +136,14 @@ graph TD
     Root["📁 Readora/"]
     Root --> Src["📁 src/"]
     Src --> App["📁 app/<br/><sub>Main — window, sidebar, navigation</sub>"]
-    Src --> UI["📁 ui/<br/><sub>Ui — the one shared style: radii, control heights,<br/>fonts, cards, header, button bar</sub>"]
+    Src --> UI["📁 ui/<br/><sub>Ui — the one shared style: radii, control heights, fonts,<br/>cards, header, gradient button; Dialogs, AppFileChooser,<br/>AppColorChooser — the app's own dialogs</sub>"]
     Src --> RP["📁 rightpanel/<br/><sub>Screens: home, recent, starred, tools, settings<br/>(FileListScreen is the shared base of recent/starred)<br/>+ AppPaths, AppFonts, ThemeManager, FontManager</sub>"]
     Src --> Viewer["📁 viewer/<br/><sub>PdfViewer (assembles the screen), PdfSession, RenderService,<br/>DocumentView, PageCanvas, ThumbnailPanel,<br/>ViewerHeader, ViewerControls, PageGeometry</sub>"]
     Viewer --> Ops["📁 viewer/ops/<br/><sub>InfoOps, ExportOps, WatermarkOps, PageOps,<br/>SecurityOps, SearchOps, PrintOps</sub>"]
     Src --> Store["📁 store/<br/><sub>AppSettings, FileListStore (Recent / Starred)</sub>"]
     Src --> Dialogs["📁 dialogs/<br/><sub>PageOrganizerDialog, MergeDialog, PdfCellRenderer</sub>"]
     Root --> Test["📁 test/<br/><sub>SmokeTest — self-contained, generates its own PDFs</sub>"]
-    Root --> Resources["📁 resources/<br/><sub>App icons</sub>"]
+    Root --> Resources["📁 resources/<br/><sub>App icon, theme/ (the dark and light theme colours)</sub>"]
     Root --> Libs["📁 libs/<br/><sub>PDFBox and FlatLaf jars</sub>"]
 
     style Root fill:#22252B,stroke:#C1622D,stroke-width:2px,color:#fff
@@ -157,6 +159,10 @@ graph TD
     style Resources fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Libs fill:#F1F2F4,stroke:#22252B,color:#22252B
 ```
+
+### Look and feel
+
+Both themes are plain FlatLaf property files in `resources/theme/` (`FlatDarkLaf.properties`, `FlatLightLaf.properties`); the colours come from the app icon. To tweak the palette, edit those files — every screen, dialog and title bar follows. Shape (corner radii, control height, spacing) lives in one place, `ui/Ui.java`. Dialogs are never `JOptionPane`/`JFileChooser` directly: use `ui.Dialogs`, `ui.AppFileChooser` and `ui.AppColorChooser`, which have the same method signatures but render in the app's own style.
 
 ### How the viewer works
 
@@ -199,7 +205,7 @@ You need a **JDK 17 or newer**. No Maven/Gradle — dependencies are in `libs/`.
 
 On Windows use `build.bat` with the same arguments.
 
-**In an IDE:** open the folder, add the three jars in `libs/` to the classpath, mark `src`, `test` and `resources` as source roots, and run `app.Main`.
+**In an IDE:** open the folder, add the jars in `libs/` to the classpath, mark `src`, `test` and `resources` as source roots, and run `app.Main`.
 
 Installers are made with `jpackage`; see [RELEASING.md](RELEASING.md).
 
