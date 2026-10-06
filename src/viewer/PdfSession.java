@@ -3,7 +3,9 @@ package viewer;
 import ui.Dialogs;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,6 +49,7 @@ public final class PdfSession implements AutoCloseable {
     private File file;
     private String password;
     private volatile int generation;
+    private String notice;
 
     // ------------------------------------------------------------------
     // State
@@ -165,6 +168,7 @@ public final class PdfSession implements AutoCloseable {
         try {
             try (PDDocument copy = openCopy()) {
                 edit.apply(copy);
+                keepProtection(copy);
                 copy.save(tmp.toFile());
             }
             lock.lock();
@@ -190,6 +194,45 @@ public final class PdfSession implements AutoCloseable {
         }
         PDDocument fresh = newPassword == null ? Loader.loadPDF(file) : Loader.loadPDF(file, newPassword);
         install(fresh, file, newPassword);
+    }
+
+    /**
+     * Writes an edited <i>copy</i> of the open PDF to {@code out}, leaving the open document and its file
+     * untouched. Protection is carried over exactly as in {@link #rewrite}.
+     */
+    public void saveCopyTo(File out, DocEdit edit) throws IOException {
+        try (PDDocument copy = openCopy()) {
+            edit.apply(copy);
+            keepProtection(copy);
+            copy.save(out);
+        }
+    }
+
+    /**
+     * PDFBox refuses to save a password-protected document unless a protection policy is supplied, so an
+     * edit that does not touch security (metadata, page edits...) would otherwise fail. This re-applies the
+     * file's protection: same permission bits, AES-256, protected with the password it was opened with.
+     * The original owner and user passwords can't both be recovered from an opened file, so the opening
+     * password is used for both; {@link #takeNotice()} tells the user.
+     */
+    private void keepProtection(PDDocument copy) throws IOException {
+        if (!copy.isEncrypted() || copy.isAllSecurityToBeRemoved()) return;
+        if (copy.getEncryption().getSecurityHandler().hasProtectionPolicy()) return;     // the edit set its own
+        String pw = password == null ? "" : password;
+        AccessPermission ap = new AccessPermission(copy.getEncryption().getPermissions());
+        StandardProtectionPolicy policy = new StandardProtectionPolicy(pw, pw, ap);
+        policy.setEncryptionKeyLength(256);
+        copy.protect(policy);
+        notice = "This PDF is password protected. It was saved with the same permissions, protected by the "
+                + "password you opened it with (used as both the owner and user password).\n\n"
+                + "To use different passwords, choose Tools \u2192 Change Password.";
+    }
+
+    /** A message the caller should show once after a successful {@link #rewrite}, or null. */
+    public String takeNotice() {
+        String n = notice;
+        notice = null;
+        return n;
     }
 
     // ------------------------------------------------------------------

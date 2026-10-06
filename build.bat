@@ -19,7 +19,13 @@ where javac >nul 2>nul || (echo javac not found - install a JDK 17 or newer. & e
 
 rmdir /s /q out\classes 2>nul
 mkdir out\classes
-dir /s /b src\*.java > out\sources.txt
+rem javac @argfiles split on spaces, so write each path quoted and with forward slashes
+rem (this keeps the build working when the repo lives in a folder whose name has spaces).
+if exist out\sources.txt del out\sources.txt
+for /r src %%f in (*.java) do (
+  set "p=%%f"
+  >> out\sources.txt echo "!p:\=/!"
+)
 javac -encoding UTF-8 -Xlint:-options -cp "libs\*" -d out\classes @out\sources.txt || exit /b 1
 xcopy /e /i /y /q resources out\classes >nul
 
@@ -39,7 +45,11 @@ if /i "%~1"=="run" (
 )
 if /i "%~1"=="test" (
   mkdir out\test-classes 2>nul
-  dir /s /b test\*.java > out\test-sources.txt
+  if exist out\test-sources.txt del out\test-sources.txt
+  for /r test %%f in (*.java) do (
+    set "p=%%f"
+    >> out\test-sources.txt echo "!p:\=/!"
+  )
   javac -encoding UTF-8 -Xlint:-options -cp "out\classes;libs\*" -d out\test-classes @out\test-sources.txt || exit /b 1
   java -Djava.awt.headless=true -cp "out\classes;out\test-classes;libs\*" viewer.SmokeTest
   exit /b %errorlevel%

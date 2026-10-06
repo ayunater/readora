@@ -202,10 +202,60 @@ public final class Ui {
         }
     }
 
-    /** The app icon (for window title bars), or null if the resource is missing. */
+    // ------------------------------------------------------------------
+    // Icons (SVG)
+    // ------------------------------------------------------------------
+
+    /** A themed icon from {@code resources/icons/<name>.svg}, drawn in the theme's text colour. */
+    public static SvgIcon icon(String name, int size) {
+        return icon(name, size, SvgIcon.Tint.TEXT);
+    }
+
+    public static SvgIcon icon(String name, int size, SvgIcon.Tint tint) {
+        try {
+            return new SvgIcon(Svg.load("/icons/" + name + ".svg"), size, size, tint);
+        } catch (RuntimeException e) {
+            // A missing icon must never take a window down with it: log it and show an empty slot.
+            System.err.println("Readora: icon '" + name + "' could not be loaded (" + e.getMessage() + ")");
+            return new SvgIcon(BLANK, size, size, tint);
+        }
+    }
+
+    private static final Svg.Doc BLANK;
+    static {
+        try {
+            BLANK = Svg.parse(new java.io.ByteArrayInputStream("<svg viewBox='0 0 24 24'/>".getBytes()));
+        } catch (java.io.IOException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    /** The Readora logo ({@code resources/logo.svg}) at the given size. */
+    public static SvgIcon logo(int size) {
+        return new SvgIcon(Svg.load("/logo.svg"), size, size, SvgIcon.Tint.NONE);
+    }
+
+    private static java.util.List<Image> appIcons;
+
+    /**
+     * The logo rendered at every size a window system asks for (title bar, taskbar, alt-tab),
+     * so each is rasterised from the vector rather than downscaled from one bitmap.
+     */
+    public static synchronized java.util.List<Image> appIcons() {
+        if (appIcons == null) {
+            Svg.Doc logo = Svg.load("/logo.svg");
+            java.util.List<Image> list = new java.util.ArrayList<>();
+            for (int px : new int[]{16, 20, 24, 32, 40, 48, 64, 128, 256}) {
+                list.add(logo.toImage(px, px, Color.BLACK));
+            }
+            appIcons = java.util.List.copyOf(list);
+        }
+        return appIcons;
+    }
+
+    /** A medium-size logo bitmap, for APIs that take a single image. */
     public static Image appIcon() {
-        java.net.URL url = Ui.class.getResource("/logo.png");
-        return url == null ? null : new ImageIcon(url).getImage();
+        return appIcons().get(7);
     }
 
     /** A large rounded tile button (Home quick actions, Tools grid). Height comes from the layout. */
@@ -221,6 +271,16 @@ public final class Ui {
     public static JButton squareButton(String text, String tooltip) {
         JButton b = new JButton(text);
         b.setFont(AppFonts.body(Font.BOLD, 16));
+        b.setFocusPainted(false);
+        b.setToolTipText(tooltip);
+        b.putClientProperty("FlatLaf.style", "arc:" + CONTROL_ARC);
+        b.setPreferredSize(new Dimension(CONTROL_H, CONTROL_H));
+        return b;
+    }
+
+    /** A square, icon-only button (page arrows, zoom +/-, tool palettes). */
+    public static JButton iconButton(String iconName, String tooltip) {
+        JButton b = new JButton(icon(iconName, 18));
         b.setFocusPainted(false);
         b.setToolTipText(tooltip);
         b.putClientProperty("FlatLaf.style", "arc:" + CONTROL_ARC);

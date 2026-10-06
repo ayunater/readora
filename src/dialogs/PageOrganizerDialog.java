@@ -8,6 +8,8 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import rightpanel.AppFonts;
 import rightpanel.ProgressDialog;
+import ui.SvgIcon;
+import ui.Ui;
 import viewer.PdfViewer;
 
 import javax.swing.*;
@@ -57,31 +59,31 @@ public class PageOrganizerDialog extends JDialog {
          * Full organizer — all features visible and equally prominent.
          * Used by the "Organize" toolbar button and "Organize Pages" in the Tools screen.
          */
-        ORGANIZE("Page Organizer", "Reorder, rotate, delete & extract pages", "✦"),
+        ORGANIZE("Page Organizer", "Reorder, rotate, delete & extract pages", "sparkles"),
 
         /**
          * Focus mode for page reordering.
          * Used by the "Reorder Pages" tool. Move arrows are highlighted.
          */
-        REORDER("Reorder Pages", "Drag or use arrow buttons to rearrange page order", "⇄"),
+        REORDER("Reorder Pages", "Drag or use arrow buttons to rearrange page order", "arrow-left-right"),
 
         /**
          * Focus mode for page rotation.
          * Used by the "Rotate Pages" tool. Rotation buttons are highlighted.
          */
-        ROTATE("Rotate Pages", "Select pages and rotate clockwise or counter-clockwise", "⟳"),
+        ROTATE("Rotate Pages", "Select pages and rotate clockwise or counter-clockwise", "rotate-cw"),
 
         /**
          * Focus mode for page deletion.
          * Used by the "Remove Pages" tool. Delete button is highlighted.
          */
-        DELETE("Remove Pages", "Select pages to mark for removal, then Save & Apply", "🗑"),
+        DELETE("Remove Pages", "Select pages to mark for removal, then Save & Apply", "trash"),
 
         /**
          * Focus mode for extracting a subset of pages to a new PDF.
          * Used by the "Extract Pages" tool. Extract button is highlighted.
          */
-        EXTRACT("Extract Pages", "Select pages to extract into a separate PDF file", "📥");
+        EXTRACT("Extract Pages", "Select pages to extract into a separate PDF file", "download");
 
         final String title;
         final String subtitle;
@@ -136,6 +138,10 @@ public class PageOrganizerDialog extends JDialog {
     private PageCardPanel draggedCard = null;
 
     /** Background executor for thumbnail rendering — single-threaded to avoid PDFBox concurrent access. */
+    /** Set when the dialog closes, so the thumbnail thread stops before the document is closed under it. */
+    private volatile boolean closed;
+    private final java.util.concurrent.CountDownLatch thumbsDone = new java.util.concurrent.CountDownLatch(1);
+
     private static final ExecutorService THUMB_POOL = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "readora-organizer-thumb-worker");
         t.setDaemon(true);
@@ -258,12 +264,10 @@ public class PageOrganizerDialog extends JDialog {
         brandLeft.setOpaque(false);
 
         // App logo
-        ImageIcon logoIcon = loadScaledIcon("/logo.png", 42, 42);
-        brandLeft.add(logoIcon != null ? new JLabel(logoIcon) : makeTextLabel(mode.icon, Font.PLAIN, 28));
+        brandLeft.add(new JLabel(Ui.logo(42)));
 
         // Mode icon badge
-        JLabel modeIconLabel = new JLabel(mode.icon);
-        modeIconLabel.setFont(rightpanel.AppFonts.body(Font.PLAIN, 22));
+        JLabel modeIconLabel = new JLabel(Ui.icon(mode.icon, 24, SvgIcon.Tint.BRAND));
         modeIconLabel.setForeground(getAccentColor());
         brandLeft.add(modeIconLabel);
 
@@ -337,8 +341,10 @@ public class PageOrganizerDialog extends JDialog {
 
         // --- Rotate group ---
         rotateGroup = buildToolGroup();
-        rotateLeftBtn  = createToolButton("⟲ Rotate Left",  e -> rotateSelected(false));
-        rotateRightBtn = createToolButton("⟳ Rotate Right", e -> rotateSelected(true));
+        rotateLeftBtn  = createToolButton("Rotate Left",  e -> rotateSelected(false));
+        rotateLeftBtn.setIcon(Ui.icon("rotate-ccw", 16));
+        rotateRightBtn = createToolButton("Rotate Right", e -> rotateSelected(true));
+        rotateRightBtn.setIcon(Ui.icon("rotate-cw", 16));
         rotateGroup.add(rotateLeftBtn);
         rotateGroup.add(rotateRightBtn);
         leftActions.add(rotateGroup);
@@ -347,8 +353,10 @@ public class PageOrganizerDialog extends JDialog {
 
         // --- Move group ---
         moveGroup = buildToolGroup();
-        moveLeftBtn  = createToolButton("◀ Move Left",  e -> moveSelected(-1));
-        moveRightBtn = createToolButton("▶ Move Right", e -> moveSelected(1));
+        moveLeftBtn  = createToolButton("Move Left",  e -> moveSelected(-1));
+        moveLeftBtn.setIcon(Ui.icon("arrow-left", 16));
+        moveRightBtn = createToolButton("Move Right", e -> moveSelected(1));
+        moveRightBtn.setIcon(Ui.icon("arrow-right", 16));
         moveGroup.add(moveLeftBtn);
         moveGroup.add(moveRightBtn);
         leftActions.add(moveGroup);
@@ -357,7 +365,8 @@ public class PageOrganizerDialog extends JDialog {
 
         // --- Delete group ---
         deleteGroup = buildToolGroup();
-        deleteBtn = createToolButton("🗑 Delete / Restore", e -> toggleDeleteSelected());
+        deleteBtn = createToolButton("Delete / Restore", e -> toggleDeleteSelected());
+        deleteBtn.setIcon(Ui.icon("trash", 16));
         deleteGroup.add(deleteBtn);
         leftActions.add(deleteGroup);
 
@@ -365,7 +374,8 @@ public class PageOrganizerDialog extends JDialog {
 
         // --- Extract group ---
         extractGroup = buildToolGroup();
-        extractSelectedBtn = createToolButton("📥 Extract Selected", e -> extractSelectedPages());
+        extractSelectedBtn = createToolButton("Extract Selected", e -> extractSelectedPages());
+        extractSelectedBtn.setIcon(Ui.icon("download", 16));
         extractGroup.add(extractSelectedBtn);
         leftActions.add(extractGroup);
 
@@ -421,7 +431,8 @@ public class PageOrganizerDialog extends JDialog {
                 BorderFactory.createMatteBorder(1, 0, 0, 0, sepColor),
                 BorderFactory.createEmptyBorder(14, 20, 14, 20)));
 
-        JLabel tipLabel = new JLabel(getModeTip());
+        JLabel tipLabel = new JLabel(getModeTip(), Ui.icon("lightbulb", 16, SvgIcon.Tint.ACCENT), SwingConstants.LEADING);
+        tipLabel.setIconTextGap(8);
         tipLabel.setFont(AppFonts.body(Font.PLAIN, 12));
         tipLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
@@ -495,16 +506,16 @@ public class PageOrganizerDialog extends JDialog {
     private String getModeTip() {
         switch (mode) {
             case ROTATE:
-                return "💡 All pages are pre-selected. Use ⟲ / ⟳ to rotate, then Save & Apply to write the new PDF.";
+                return "All pages are pre-selected. Use the rotate buttons, then Save & Apply to write the new PDF.";
             case REORDER:
-                return "💡 Drag cards or use ◀ ▶ buttons to reorder. Save & Apply writes the new page order.";
+                return "Drag cards or use the arrow buttons to reorder. Save & Apply writes the new page order.";
             case DELETE:
-                return "💡 All pages are pre-selected. Deselect pages you want to keep, then click Delete / Restore, then Save & Apply.";
+                return "All pages are pre-selected. Deselect pages you want to keep, then click Delete / Restore, then Save & Apply.";
             case EXTRACT:
-                return "💡 All pages are pre-selected. Deselect pages you don't need, then click Extract Selected.";
+                return "All pages are pre-selected. Deselect pages you don't need, then click Extract Selected.";
             case ORGANIZE:
             default:
-                return "💡 Click cards to select. Drag or use ◀ ▶ to reorder. ⟲ ⟳ to rotate. 🗑 to delete. 📥 to extract.";
+                return "Click cards to select. Drag or use the arrows to reorder; rotate, delete or extract with the toolbar.";
         }
     }
 
@@ -549,6 +560,7 @@ public class PageOrganizerDialog extends JDialog {
         btn.setFont(AppFonts.body(Font.PLAIN, 12));
         btn.setFocusPainted(false);
         btn.setMargin(new Insets(5, 11, 5, 11));
+        btn.setIconTextGap(6);
         btn.addActionListener(listener);
         return btn;
     }
@@ -577,7 +589,7 @@ public class PageOrganizerDialog extends JDialog {
 
     private Color getAccentColor() {
         Color accent = UIManager.getColor("Component.accentColor");
-        return accent != null ? accent : ui.Ui.accent();
+        return accent != null ? accent : Ui.accent();
     }
 
     private ImageIcon loadScaledIcon(String resourcePath, int w, int h) {
@@ -600,7 +612,7 @@ public class PageOrganizerDialog extends JDialog {
             try {
                 PDFRenderer renderer = new PDFRenderer(originalDocument);
                 float targetW = 280f;
-                for (int i = 0; i < pageItems.size(); i++) {
+                for (int i = 0; i < pageItems.size() && !closed; i++) {
                     final int idx = i;
                     try {
                         float pageW = originalDocument.getPage(idx).getMediaBox().getWidth();
@@ -614,8 +626,29 @@ public class PageOrganizerDialog extends JDialog {
                         });
                     } catch (Exception ignored) { }
                 }
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+            } finally {
+                thumbsDone.countDown();
+            }
         });
+    }
+
+    /**
+     * Closing the dialog tells the thumbnail thread to stop. The caller that owns the
+     * document should call this before closing it, so nothing renders from a closed file.
+     */
+    public void awaitBackgroundWork(long millis) {
+        try {
+            thumbsDone.await(millis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void dispose() {
+        closed = true;
+        super.dispose();
     }
 
     // =========================================================================
@@ -941,7 +974,7 @@ public class PageOrganizerDialog extends JDialog {
                 badge.setForeground(new Color(220, 53, 69));
                 header.add(badge, BorderLayout.EAST);
             } else if (item.rotationDelta != 0) {
-                JLabel badge = new JLabel("⟳ " + item.rotationDelta + "°");
+                JLabel badge = new JLabel(item.rotationDelta + "\u00B0", Ui.icon("rotate-cw", 12, SvgIcon.Tint.ACCENT), SwingConstants.LEADING);
                 badge.setFont(AppFonts.body(Font.BOLD, 11));
                 badge.setForeground(getAccentColor());
                 header.add(badge, BorderLayout.EAST);
@@ -954,17 +987,17 @@ public class PageOrganizerDialog extends JDialog {
             JPanel cardActions = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 6));
             cardActions.setOpaque(false);
 
-            JButton btnRotL = makeCardBtn("⟲", "Rotate CCW",  e -> { item.rotateCounterClockwise(); rebuildCards(); });
-            JButton btnRotR = makeCardBtn("⟳", "Rotate CW",   e -> { item.rotateClockwise();        rebuildCards(); });
-            JButton btnMvL  = makeCardBtn("◀", "Move Left",   e -> {
+            JButton btnRotL = makeCardBtn("rotate-ccw", "Rotate CCW",  e -> { item.rotateCounterClockwise(); rebuildCards(); });
+            JButton btnRotR = makeCardBtn("rotate-cw", "Rotate CW",   e -> { item.rotateClockwise();        rebuildCards(); });
+            JButton btnMvL  = makeCardBtn("arrow-left", "Move Left",   e -> {
                 int idx = pageItems.indexOf(item);
                 if (idx > 0) { pageItems.set(idx, pageItems.get(idx - 1)); pageItems.set(idx - 1, item); rebuildCards(); }
             });
-            JButton btnMvR  = makeCardBtn("▶", "Move Right",  e -> {
+            JButton btnMvR  = makeCardBtn("arrow-right", "Move Right",  e -> {
                 int idx = pageItems.indexOf(item);
                 if (idx < pageItems.size() - 1) { pageItems.set(idx, pageItems.get(idx + 1)); pageItems.set(idx + 1, item); rebuildCards(); }
             });
-            JButton btnDel  = makeCardBtn(item.isDeleted ? "↩" : "🗑",
+            JButton btnDel  = makeCardBtn(item.isDeleted ? "undo-2" : "trash",
                     item.isDeleted ? "Restore Page" : "Delete Page", e -> { item.isDeleted = !item.isDeleted; rebuildCards(); });
 
             int ci = pageItems.indexOf(item);
@@ -991,8 +1024,8 @@ public class PageOrganizerDialog extends JDialog {
             add(cardActions, BorderLayout.SOUTH);
         }
 
-        private JButton makeCardBtn(String text, String tooltip, ActionListener l) {
-            JButton btn = new JButton(text);
+        private JButton makeCardBtn(String iconName, String tooltip, ActionListener l) {
+            JButton btn = new JButton(Ui.icon(iconName, 14));
             btn.setToolTipText(tooltip);
             btn.putClientProperty("FlatLaf.style", "arc: 12");
             btn.setFont(rightpanel.AppFonts.body(Font.PLAIN, 12));

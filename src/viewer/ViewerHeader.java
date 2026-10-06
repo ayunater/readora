@@ -11,6 +11,7 @@ final class ViewerHeader extends JPanel {
 
     final JButton open = Ui.button("Open PDF");
     final JButton organize = Ui.button("Organize");
+    final JToggleButton edit = new JToggleButton("Edit");
     final JButton star = Ui.button("Star");
     final JButton reload = Ui.button("Reload");
     private final Ui.Header header = Ui.header("Viewer", "Open a PDF to get started");
@@ -23,6 +24,11 @@ final class ViewerHeader extends JPanel {
         actions.setOpaque(false);
         actions.add(open);
         actions.add(organize);
+        Ui.styleButton(edit);
+        edit.setIcon(Ui.icon("file-pen", 16));
+        edit.setIconTextGap(6);
+        edit.setToolTipText("Add text, pictures, shapes and drawings to this PDF");
+        actions.add(edit);
         actions.add(star);
         actions.add(reload);
         add(actions, BorderLayout.EAST);
@@ -45,6 +51,7 @@ final class ViewerHeader extends JPanel {
 
     private void setDocumentActionsEnabled(boolean on) {
         organize.setEnabled(on);
+        edit.setEnabled(on);
         star.setEnabled(on);
         reload.setEnabled(on);
     }

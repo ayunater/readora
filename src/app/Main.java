@@ -13,6 +13,7 @@ import rightpanel.home;
 
 import rightpanel.*;
 import store.AppSettings;
+import ui.SvgIcon;
 import ui.Ui;
 import viewer.PdfDropHandler;
 import viewer.PdfViewer;
@@ -96,9 +97,8 @@ public class Main extends JFrame implements ActionListener {
          * runs) is already in effect on every component built here.
          */
         Main() {
-                ImageIcon icon = new ImageIcon(getClass().getResource("/logo.png"));
                 setTitle(AppInfo.NAME);
-                setIconImage(icon.getImage());
+                setIconImages(Ui.appIcons());
                 Rectangle bounds = GraphicsEnvironment
                                 .getLocalGraphicsEnvironment()
                                 .getMaximumWindowBounds();
@@ -108,7 +108,13 @@ public class Main extends JFrame implements ActionListener {
                                 (int) (bounds.height * 0.85));
                 setLocationRelativeTo(null);
                 setLayout(new BorderLayout(5, 5));
-                setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+                addWindowListener(new java.awt.event.WindowAdapter() {
+                        @Override
+                        public void windowClosing(java.awt.event.WindowEvent e) {
+                                requestExit();
+                        }
+                });
                 setMinimumSize(new Dimension(850, 600));
 
                 root = getContentPane();
@@ -135,7 +141,7 @@ public class Main extends JFrame implements ActionListener {
 
                 menuButton = new JButton(
                                 "Menu",
-                                loadIcon("/menu.png"));
+                                loadIcon("menu"));
 
                 addComponent(leftPanel,
                                 menuButton,
@@ -173,7 +179,7 @@ public class Main extends JFrame implements ActionListener {
 
                 homeButton = new JButton(
                                 "Home",
-                                loadIcon("/home.png"));
+                                loadIcon("house"));
 
                 addComponent(leftTopPanel, homeButton,
                                 0, 0, 1, 1,
@@ -189,7 +195,7 @@ public class Main extends JFrame implements ActionListener {
 
                 recentButton = new JButton(
                                 "Recent",
-                                loadIcon("/recent.png"));
+                                loadIcon("clock"));
 
                 addComponent(leftTopPanel, recentButton,
                                 0, 1, 1, 1,
@@ -205,7 +211,7 @@ public class Main extends JFrame implements ActionListener {
 
                 starredButton = new JButton(
                                 "Starred",
-                                loadIcon("/star.png"));
+                                loadIcon("star"));
 
                 addComponent(leftTopPanel, starredButton,
                                 0, 2, 1, 1,
@@ -221,7 +227,7 @@ public class Main extends JFrame implements ActionListener {
 
                 toolsButton = new JButton(
                                 "Tools",
-                                loadIcon("/tools.png"));
+                                loadIcon("wrench"));
 
                 addComponent(leftTopPanel, toolsButton,
                                 0, 3, 1, 1,
@@ -248,7 +254,7 @@ public class Main extends JFrame implements ActionListener {
 
                 settingButton = new JButton(
                                 "Settings",
-                                loadIcon("/settings.png"));
+                                loadIcon("settings"));
 
                 addComponent(leftBottomPanel, settingButton,
                                 0, 0, 1, 1,
@@ -264,7 +270,7 @@ public class Main extends JFrame implements ActionListener {
 
                 exitButton = new JButton(
                                 "Exit",
-                                loadIcon("/exit.png"));
+                                loadIcon("log-out"));
 
                 addComponent(leftBottomPanel, exitButton,
                                 0, 1, 1, 1,
@@ -322,8 +328,13 @@ public class Main extends JFrame implements ActionListener {
                                 GridBagConstraints.CENTER);
 
                 home homePage = new home(this,
+                                () -> {
+                                        cardLayout.show(cards, "VIEWER");
+                                        viewerPage.newPdf();
+                                },
                                 this::openPdfDialog,
                                 () -> cardLayout.show(cards, "RECENT"),
+                                () -> cardLayout.show(cards, "STARRED"),
                                 () -> cardLayout.show(cards, "TOOLS"),
                                 () -> cardLayout.show(cards, "SETTINGS"));
 
@@ -375,14 +386,7 @@ public class Main extends JFrame implements ActionListener {
 
                 cards.add(viewerPage, "VIEWER");
 
-                PdfDropHandler.install(cards, f -> {
-                        try {
-                                showPdf(f);
-                        } catch (IOException ex) {
-                                Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
-                                                "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                });
+                // (drag-and-drop is installed for the whole window once everything is built, below)
 
                 tools toolsPage = new tools(viewerPage,
                                 () -> cardLayout.show(cards, "VIEWER"));
@@ -395,7 +399,30 @@ public class Main extends JFrame implements ActionListener {
 
                 cards.add(toolsPage, "TOOLS");
 
+                // Drop a PDF anywhere in the window to open it (including over tables and text fields).
+                PdfDropHandler.installEverywhere(getContentPane(), this::openExternally);
+
+                // macOS delivers "Open with" files as an event instead of a command-line argument.
+                try {
+                        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_FILE)) {
+                                Desktop.getDesktop().setOpenFileHandler(ev -> {
+                                        for (File f : ev.getFiles()) {
+                                                if (f.getName().toLowerCase().endsWith(".pdf")) {
+                                                        openExternally(f);
+                                                        break;
+                                                }
+                                        }
+                                });
+                        }
+                } catch (UnsupportedOperationException | SecurityException ignored) {
+                        // not available on this platform
+                }
+
                 setVisible(true);
+                if (launchFile != null) {
+                        openExternally(launchFile);
+                        launchFile = null;
+                }
         }
 
         /**
@@ -447,31 +474,14 @@ public class Main extends JFrame implements ActionListener {
          * where the app happens to be launched from. The resources folder
          * is marked as a classpath resources root, so its contents (not
          * the folder itself) land at the classpath root — hence paths here
-         * look like {@code "/home.png"}, not {@code "/resources/home.png"}.
+         * are SVG names such as {@code "house"} (see resources/icons).
          *
-         * @param path classpath-relative resource path, e.g. "/home.png"
+         * @param path classpath-relative resource path, e.g. "house"
          * @return the scaled icon, or an empty icon if the resource couldn't be found
          */
-        private ImageIcon loadIcon(String path) {
-
-                int width = 28;
-                int height = 28;
-
-                java.net.URL url = getClass().getResource(path);
-
-                if (url == null) {
-                        System.err.println("Missing resource: " + path);
-                        return new ImageIcon();
-                }
-
-                ImageIcon icon = new ImageIcon(url);
-
-                Image scaled = icon.getImage().getScaledInstance(
-                                width,
-                                height,
-                                Image.SCALE_SMOOTH);
-
-                return new ImageIcon(scaled);
+        /** A sidebar icon: SVG, drawn in the brand gradient at a fixed size. */
+        private Icon loadIcon(String name) {
+                return Ui.icon(name, 26, SvgIcon.Tint.BRAND);
         }
 
         /**
@@ -534,23 +544,7 @@ public class Main extends JFrame implements ActionListener {
                                 break;
                         case "Exit":
 
-                                boolean confirmExit = AppSettings.confirmExit();
-                                if (confirmExit) {
-
-                                        int choice = Dialogs.showConfirmDialog(
-                                                        this,
-                                                        "Do you want to close Readora?",
-                                                        "Exit",
-                                                        JOptionPane.YES_NO_OPTION);
-
-                                        if (choice == JOptionPane.YES_OPTION) {
-                                                shutdownAndExit();
-                                        }
-
-                                } else {
-                                        shutdownAndExit();
-                                }
-
+                                requestExit();
                                 break;
                 }
         }
@@ -667,7 +661,7 @@ public class Main extends JFrame implements ActionListener {
          * {@link ThemeManager#applyTheme(String)} <b>before</b>
          * constructing the main window — a FlatLaf theme must be installed
          * prior to component creation to take effect on them automatically.
-         * Defaults to "Gruvbox Dark Hard" if no settings file exists yet
+         * Defaults to "Readora Dark" if no settings file exists yet
          * (first run) or the file doesn't specify a theme, so the app never
          * starts out unstyled.
          *
@@ -675,12 +669,49 @@ public class Main extends JFrame implements ActionListener {
          * {@code SwingUtilities.invokeLater}, as required for any Swing UI
          * construction.
          */
-        public static void main(String[] args) {
+        /** A PDF given on the command line ("Open with", dropping a file on the app icon, `Readora file.pdf`). */
+        private static File launchFile;
 
-                String theme = AppSettings.theme();
-                ThemeManager.applyTheme(theme);
+        /** The first argument that is an existing PDF file, or null. */
+        static File firstPdfArgument(String[] args) {
+                if (args == null) {
+                        return null;
+                }
+                for (String a : args) {
+                        File f = new File(a);
+                        if (f.isFile() && f.getName().toLowerCase().endsWith(".pdf")) {
+                                return f.getAbsoluteFile();
+                        }
+                }
+                return null;
+        }
+
+        public static void main(String[] args) {
+                launchFile = firstPdfArgument(args);
+
+                ThemeManager.applyTheme(AppSettings.theme());
+                // Let FlatLaf draw the title bar of every window and dialog, so it follows the
+                // dark/light theme instead of the operating system's.
+                JFrame.setDefaultLookAndFeelDecorated(true);
+                JDialog.setDefaultLookAndFeelDecorated(true);
 
                 SwingUtilities.invokeLater(Main::new);
+        }
+
+        /**
+         * Opens {@code file} from outside the normal flow (command line, or the macOS "open file"
+         * event). Safe to call before the window is up; it then waits for it.
+         */
+        private void openExternally(File file) {
+                SwingUtilities.invokeLater(() -> {
+                        try {
+                                showPdf(file);
+                                toFront();
+                        } catch (IOException ex) {
+                                Dialogs.showMessageDialog(this, "Could not open \"" + file.getName() + "\":\n" + ex.getMessage(),
+                                                "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                });
         }
 
         /**
@@ -710,6 +741,24 @@ public class Main extends JFrame implements ActionListener {
                         Dialogs.showMessageDialog(this, "Could not open file: " + ex.getMessage(),
                                         "Error", JOptionPane.ERROR_MESSAGE);
                 }
+        }
+
+        /**
+         * The one way out of the app (Exit button and the window's X): offers to save unsaved PDF edits,
+         * then asks for confirmation if that is enabled in Settings.
+         */
+        private void requestExit() {
+                if (viewerPage != null && !viewerPage.confirmEditsHandled()) {
+                        return;
+                }
+                if (AppSettings.confirmExit()) {
+                        int choice = Dialogs.showConfirmDialog(this, "Do you want to close Readora?", "Exit",
+                                        JOptionPane.YES_NO_OPTION);
+                        if (choice != JOptionPane.YES_OPTION) {
+                                return;
+                        }
+                }
+                shutdownAndExit();
         }
 
         private void shutdownAndExit() {

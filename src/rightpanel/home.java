@@ -3,6 +3,7 @@ package rightpanel;
 import ui.Dialogs;
 import app.Main;
 import store.FileListStore;
+import ui.SvgIcon;
 import ui.Ui;
 
 import javax.swing.*;
@@ -27,15 +28,15 @@ public class home extends JPanel {
     private List<FileListStore.Entry> entries = List.of();
     private Timer typing;
 
-    public home(Main main, Runnable openPdfAction, Runnable recentAction,
-                Runnable toolsAction, Runnable settingsAction) {
+    public home(Main main, Runnable newPdfAction, Runnable openPdfAction, Runnable recentAction,
+                Runnable starredAction, Runnable toolsAction, Runnable settingsAction) {
         this.main = main;
         setLayout(new BorderLayout(Ui.GAP, Ui.GAP));
         setOpaque(false);
         Ui.padScreen(this);
 
         // ---- hero ----
-        titleLabel = new JLabel("", loadLogo(), SwingConstants.CENTER);
+        titleLabel = new JLabel("", Ui.logo(80), SwingConstants.CENTER);
         titleLabel.setFont(AppFonts.title(Font.PLAIN, 54));
         JLabel tagline = Ui.subtitle("Read, manage, and organize PDFs");
         tagline.setHorizontalAlignment(SwingConstants.CENTER);
@@ -77,12 +78,14 @@ public class home extends JPanel {
         JPanel actionsWrap = new JPanel(new BorderLayout(0, 10));
         actionsWrap.setOpaque(false);
         actionsWrap.add(Ui.section("Quick Actions"), BorderLayout.NORTH);
-        JPanel grid = new JPanel(new GridLayout(2, 2, 10, 10));
+        JPanel grid = new JPanel(new GridLayout(2, 3, 10, 10));
         grid.setOpaque(false);
-        grid.add(action("Open PDF", openPdfAction));
-        grid.add(action("Recent", recentAction));
-        grid.add(action("Tools", toolsAction));
-        grid.add(action("Settings", settingsAction));
+        grid.add(action("New PDF", "file-plus", newPdfAction));
+        grid.add(action("Open PDF", "folder-open", openPdfAction));
+        grid.add(action("Recent", "clock", recentAction));
+        grid.add(action("Starred", "star", starredAction));
+        grid.add(action("Tools", "wrench", toolsAction));
+        grid.add(action("Settings", "settings", settingsAction));
         actionsWrap.add(grid, BorderLayout.CENTER);
         south.add(actionsWrap);
         add(south, BorderLayout.SOUTH);
@@ -94,8 +97,10 @@ public class home extends JPanel {
         startTyping();
     }
 
-    private JButton action(String text, Runnable r) {
+    private JButton action(String text, String icon, Runnable r) {
         JButton b = Ui.tile(text);
+        b.setIcon(Ui.icon(icon, 20, SvgIcon.Tint.BRAND));
+        b.setIconTextGap(10);
         b.setFont(AppFonts.body(Font.BOLD, 14));
         b.addActionListener(e -> r.run());
         return b;
@@ -137,12 +142,5 @@ public class home extends JPanel {
             if (i[0] >= APP_NAME.length()) typing.stop();
         });
         typing.start();
-    }
-
-    private ImageIcon loadLogo() {
-        java.net.URL url = getClass().getResource("/logo.png");
-        if (url == null) return new ImageIcon();
-        Image img = new ImageIcon(url).getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
-        return new ImageIcon(img);
     }
 }

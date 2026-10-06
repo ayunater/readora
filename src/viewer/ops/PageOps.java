@@ -36,7 +36,9 @@ public final class PageOps extends Ops {
         // The organizer gets its own copy of the document so its thumbnail
         // worker can never collide with the main renderer.
         try (PDDocument copy = session.openCopy()) {
-            new PageOrganizerDialog(owner, copy, session.file(), viewer, mode).setVisible(true);
+            PageOrganizerDialog dialog = new PageOrganizerDialog(owner, copy, session.file(), viewer, mode);
+            dialog.setVisible(true);                 // blocks until the dialog is closed
+            dialog.awaitBackgroundWork(5000);        // let the thumbnail thread stop before the copy is closed
         } catch (IOException e) {
             error("Could not open the page organizer", e);
         }

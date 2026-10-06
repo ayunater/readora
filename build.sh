@@ -4,6 +4,7 @@
 #   ./build.sh          compile and create dist/Readora.jar (+ dist/libs)
 #   ./build.sh run      build, then launch the app
 #   ./build.sh test     build, then run the automated tests
+#   ./build.sh icons    regenerate packaging/logo.png and logo.ico from resources/logo.svg
 #   ./build.sh clean    remove build output
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -38,6 +39,10 @@ echo "Built $DIST/Readora.jar"
 case "${1:-build}" in
   run)
     exec java -jar "$DIST/Readora.jar"
+    ;;
+  icons)
+    java -Djava.awt.headless=true -cp "$OUT:$CP" scripts/IconExport.java packaging
+    cp resources/logo.svg assets/logo.svg
     ;;
   test)
     mkdir -p out/test-classes

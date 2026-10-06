@@ -1,6 +1,7 @@
 package viewer;
 
 import rightpanel.AppFonts;
+import viewer.edit.PageOverlay;
 import viewer.ops.HighlightArea;
 import ui.Ui;
 
@@ -20,7 +21,7 @@ import java.util.List;
  * keeps memory and startup time flat whether the PDF has 3 pages or 3,000,
  * and lets every page have its own size.</p>
  */
-final class PageCanvas extends JComponent implements Scrollable {
+final class PageCanvas extends JComponent implements Scrollable, viewer.edit.PageHost {
 
     static final int MARGIN = 24;
     static final int GAP = 16;
@@ -31,6 +32,18 @@ final class PageCanvas extends JComponent implements Scrollable {
     private double zoom = 1.0;
     private int[] tops = new int[0];
     private int contentW, contentH;
+
+    private PageOverlay overlay;
+
+    void setOverlay(PageOverlay o) { overlay = o; repaint(); }
+
+    // ---- viewer.edit.PageHost: what the editor needs to know about the pages ----
+    @Override public JComponent component()          { return this; }
+    @Override public int pageCount()                 { return geo.count(); }
+    @Override public int pageAt(Point p)             { return Math.max(0, pageAtY(p.y)); }
+    @Override public double pxPerPt()                { return zoom * PageGeometry.PX_PER_PT; }
+    @Override public double pageWidthPt(int page)    { return geo.width(page); }
+    @Override public double pageHeightPt(int page)   { return geo.height(page); }
 
     private final Map<Integer, List<HighlightArea>> highlights = new HashMap<>();
     private HighlightArea current;
@@ -69,7 +82,8 @@ final class PageCanvas extends JComponent implements Scrollable {
     int pageH(int i)             { return Math.max(1, Math.round(geo.height(i) * (float) (zoom * PageGeometry.PX_PER_PT))); }
     int pageTop(int i)           { return tops[i]; }
 
-    Rectangle pageBounds(int i) {
+    @Override
+    public Rectangle pageBounds(int i) {
         int w = pageW(i);
         return new Rectangle((getWidth() - w) / 2, tops[i], w, pageH(i));
     }
@@ -182,6 +196,8 @@ final class PageCanvas extends JComponent implements Scrollable {
         }
         g.setColor(new Color(0, 0, 0, 40));
         g.drawRect(b.x, b.y, b.width - 1, b.height - 1);
+
+        if (overlay != null) overlay.paint(g, i, b, zoom * PageGeometry.PX_PER_PT);
 
         List<HighlightArea> hs = highlights.get(i);
         if (hs != null) {

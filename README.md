@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="assets/logo.png" alt="Readora logo" width="20%"/>
+<img src="assets/logo.svg" alt="Readora logo" width="20%"/>
 
 **Read, manage, and organize PDFs** — a lightweight desktop reader and utility toolkit built in Java Swing.
 
@@ -52,6 +52,9 @@
 </tr>
 <tr>
 <td align="center"><b>📖 Viewer — Dark</b><br/><sub>Lazy-rendered pages, thumbnails, zoom and fit</sub><br/><br/><img src="assets/viewer.png" width="95%"/></td>
+<td align="center" colspan="2"><b>✏️ Editor</b><br/><sub>Add text, pictures, shapes, highlights and drawings; undo/redo; save safely</sub><br/><br/><img src="assets/editor.png" width="70%"/></td>
+</tr>
+<tr>
 <td align="center"><b>📖 Viewer — Light</b><br/><sub>The same screen in Readora Light</sub><br/><br/><img src="assets/viewer-light.png" width="95%"/></td>
 </tr>
 </table>
@@ -73,6 +76,19 @@ Readora is a Java Swing desktop application for viewing and working with PDF doc
 - Mixed page sizes and rotated pages lay out correctly
 - Ctrl + mouse wheel zoom, drag to pan, keyboard shortcuts, and drag-and-drop a PDF onto the window to open it
 - In-document text search with every match highlighted
+
+**✏️ Create & Edit**
+- **New PDF**: a blank document in A4, Letter, Legal, A3 or A5 (portrait or landscape, any number of pages) that opens straight in the editor
+- **Edit any PDF**: text boxes (Helvetica, Times, Courier, bold/italic, automatic wrapping), pictures, rectangles, ellipses, lines, a highlighter and a freehand pen
+- Select, move, resize, duplicate and delete; keyboard nudging; unlimited undo/redo; tool shortcuts (V T I R O L H P)
+- Edits are real PDF content (selectable text, vector shapes), placed correctly on rotated pages and pages with crop boxes
+- Non-Latin text falls back to an installed Unicode font; password-protected files stay protected when saved
+- Safe saving: **Save** replaces the file only after a successful write, **Save a copy** leaves the original alone, and unsaved edits are never lost silently (asked on close, open, reload and exit)
+- Insert a blank page after the current one
+
+**🧭 Opening files**
+- Appears in the file manager's **"Open with"** list for PDFs (installers register it; the portable build can add itself from Settings)
+- Open from the command line (`Readora file.pdf`), by dropping a file on the app icon, or by **dragging a PDF onto the window** — anywhere, including over tables and text fields
 
 **ℹ️ Metadata & Info**
 - View and edit document metadata
@@ -139,9 +155,11 @@ graph TD
     Src --> UI["📁 ui/<br/><sub>Ui — the one shared style: radii, control heights, fonts,<br/>cards, header, gradient button; Dialogs, AppFileChooser,<br/>AppColorChooser — the app's own dialogs</sub>"]
     Src --> RP["📁 rightpanel/<br/><sub>Screens: home, recent, starred, tools, settings<br/>(FileListScreen is the shared base of recent/starred)<br/>+ AppPaths, AppFonts, ThemeManager, FontManager</sub>"]
     Src --> Viewer["📁 viewer/<br/><sub>PdfViewer (assembles the screen), PdfSession, RenderService,<br/>DocumentView, PageCanvas, ThumbnailPanel,<br/>ViewerHeader, ViewerControls, PageGeometry</sub>"]
+    Viewer --> Edit["📁 viewer/edit/<br/><sub>EditModel (undo/redo), EditItem, EditOverlay, EditController,<br/>EditToolbar, EditWriter, PageSpace, EditFonts</sub>"]
     Viewer --> Ops["📁 viewer/ops/<br/><sub>InfoOps, ExportOps, WatermarkOps, PageOps,<br/>SecurityOps, SearchOps, PrintOps</sub>"]
     Src --> Store["📁 store/<br/><sub>AppSettings, FileListStore (Recent / Starred)</sub>"]
     Src --> Dialogs["📁 dialogs/<br/><sub>PageOrganizerDialog, MergeDialog, PdfCellRenderer</sub>"]
+    Root --> Pack["📁 packaging/<br/><sub>Icons generated from the SVG, installer file associations</sub>"]
     Root --> Test["📁 test/<br/><sub>SmokeTest — self-contained, generates its own PDFs</sub>"]
     Root --> Resources["📁 resources/<br/><sub>App icon, theme/ (the dark and light theme colours)</sub>"]
     Root --> Libs["📁 libs/<br/><sub>PDFBox and FlatLaf jars</sub>"]
@@ -155,6 +173,8 @@ graph TD
     style Ops fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Store fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Dialogs fill:#F1F2F4,stroke:#22252B,color:#22252B
+    style Edit fill:#F1F2F4,stroke:#22252B,color:#22252B
+    style Pack fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Test fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Resources fill:#F1F2F4,stroke:#22252B,color:#22252B
     style Libs fill:#F1F2F4,stroke:#22252B,color:#22252B
@@ -169,6 +189,7 @@ Both themes are plain FlatLaf property files in `resources/theme/` (`FlatDarkLaf
 - **`PdfSession`** owns the open document, its password, and a *safe rewrite*: edits are saved to a temp file and swapped in only on success, so a failed save can never lose your PDF.
 - **`RenderService`** renders on one background thread. Visible pages come first, then prefetch, then thumbnails; results go into byte-bounded LRU caches. A page that fails to render shows a placeholder instead of stopping the rest.
 - **`PageCanvas`** is a single component that paints only the pages in view, so memory and startup time don't grow with page count.
+- **The editor** keeps pending edits in an `EditModel` and writes them only on save, as real page content, through `EditWriter`. `PageSpace` converts what you see into PDF coordinates, which is what makes rotated pages and crop boxes come out right.
 - **Background tools** (export, split, watermark, search, print) work on their own copy of the document, never the one being rendered.
 
 <br/>
@@ -179,12 +200,13 @@ Download the latest build from the [**Releases**](../../releases) page.
 
 ### 🪟 Windows
 - Run `Readora-1.0.0.exe` or `Readora-1.0.0.msi` to install, **or**
-- Use the portable build — unzip and run `Readora.exe`, no installation needed
+- Use the portable build (`Readora-1.0.0-portable-windows.zip`) — unzip and run `Readora.exe`, no installation needed
 
 > ⚠️ **Note:** the installers are not code-signed (a signing certificate has an ongoing cost not justified for this project at this stage), so Windows SmartScreen may flag them as being from an unrecognized publisher on first run. This is expected and not an indication of a problem with the installer.
 
 ### 🐧 Linux
-- Debian / Ubuntu: `sudo dpkg -i readora_1.0.0_amd64.deb`
+- Debian / Ubuntu: `sudo apt install ./readora_1.0.0_amd64.deb` (installs to `/opt/readora` and adds a menu entry)
+- Portable: `Readora-1.0.0-portable-linux.zip` — unzip and run `Readora/bin/Readora`
 - Fedora / RHEL: `sudo rpm -i readora-1.0.0-1.x86_64.rpm`
 
 ### ☕ Any platform with Java 17+
@@ -200,6 +222,7 @@ You need a **JDK 17 or newer**. No Maven/Gradle — dependencies are in `libs/`.
 ./build.sh          # compile and create dist/Readora.jar (+ dist/libs)
 ./build.sh run      # build and launch
 ./build.sh test     # build and run the automated tests
+./build.sh icons      # regenerate packaging/logo.png and logo.ico from resources/logo.svg (after changing the logo)
 ./build.sh clean
 ```
 
@@ -207,13 +230,19 @@ On Windows use `build.bat` with the same arguments.
 
 **In an IDE:** open the folder, add the jars in `libs/` to the classpath, mark `src`, `test` and `resources` as source roots, and run `app.Main`.
 
-Installers are made with `jpackage`; see [RELEASING.md](RELEASING.md).
+Installers are built with `scripts/package.sh` (Linux) or `scripts\package.bat` (Windows); see [RELEASING.md](RELEASING.md).
 
 <br/>
 
 ## 🧪 Testing
 
-`./build.sh test` runs `test/viewer/SmokeTest.java`, which generates its own PDFs and checks the parts that can lose data or silently break: the Recent/Starred store (including file names with commas and the old CSV format), page geometry for mixed-size and rotated pages, the safe-rewrite path (failure leaves the original untouched), password add/remove, search hit counts, and watermarking on a copy. It runs headless and is executed by CI on Windows, macOS and Linux for every push.
+`./build.sh test` runs `test/viewer/SmokeTest.java`, which generates its own PDFs and checks the parts that can lose data or silently break: the Recent/Starred store (including file names with commas and the old CSV format), page geometry for mixed-size and rotated pages, the safe-rewrite path (a failure leaves the original untouched), password add/remove and saving encrypted files, search hit counts, watermarking on a copy, **the editor** (every item type rendered and pixel-checked on pages rotated 0/90/180/270, text wrapping and extraction, Unicode fallback, undo/redo), the SVG renderer and every icon name used in the code, the dark and light themes, and the "Open with" and drag-and-drop logic. It runs headless and is executed by CI on Windows, macOS and Linux for every push.
+
+<br/>
+
+## 🗺️ What's next
+
+Version 2 ideas — an in-viewer find bar, selecting and copying text, form filling and signing, real annotations, true redaction, compression and OCR — are listed in [ROADMAP.md](ROADMAP.md). Third-party licences (PDFBox, FlatLaf, Lucide icons) are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 <br/>
 

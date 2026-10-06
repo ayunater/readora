@@ -7,7 +7,12 @@ import rightpanel.recent;
 import rightpanel.starred;
 import store.AppSettings;
 import ui.Ui;
+import viewer.edit.*;
 import viewer.ops.*;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import ui.AppFileChooser;
+import ui.Dialogs;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -49,6 +54,15 @@ public class PdfViewer extends JPanel {
     private final SearchOps search;
     private final PrintOps print;
 
+    // ---- editing ----
+    private final EditModel editModel = new EditModel();
+    private final EditProps editProps = new EditProps();
+    private final EditOverlay editOverlay = new EditOverlay(editModel);
+    private final EditController editCtl;
+    private final EditToolbar editBar;
+    private boolean editing;
+    private boolean savingEdits;
+
     private File shownFile;
 
     public PdfViewer() {
@@ -69,8 +83,23 @@ public class PdfViewer extends JPanel {
         search = new SearchOps(session, this, docView::setHighlights, docView::showHighlight);
         print = new PrintOps(session, this);
 
+        editCtl = new EditController(docView.pageHost(), editModel, editOverlay, editProps);
+        editCtl.onSave(this::saveEdits);
+        editBar = new EditToolbar(editCtl, editModel, editProps, new EditToolbar.Actions() {
+            @Override public void addPage() { addBlankPage(); }
+            @Override public void saveCopy() { saveEditedCopy(); }
+            @Override public void save() { saveEdits(); }
+            @Override public void done() { setEditing(false); }
+        });
+        editBar.setVisible(false);
+        docView.setOverlay(editOverlay);
+
         // ---- layout ----
-        add(header, BorderLayout.NORTH);
+        JPanel north = new JPanel(new BorderLayout(0, Ui.GAP));
+        north.setOpaque(false);
+        north.add(header, BorderLayout.NORTH);
+        north.add(editBar, BorderLayout.CENTER);
+        add(north, BorderLayout.NORTH);
         JPanel body = new JPanel(new BorderLayout(Ui.GAP, 0));
         body.setOpaque(false);
         body.add(thumbs, BorderLayout.WEST);
@@ -97,6 +126,7 @@ public class PdfViewer extends JPanel {
     private void wire() {
         header.open.addActionListener(e -> choosePdf());
         header.organize.addActionListener(e -> openPageOrganizer());
+        header.edit.addActionListener(e -> setEditing(header.edit.isSelected()));
         header.star.addActionListener(e -> toggleStar());
         header.reload.addActionListener(e -> reloadCurrent());
 
@@ -131,6 +161,8 @@ public class PdfViewer extends JPanel {
     /** Called whenever the session's document is opened, replaced (e.g. after an edit) or closed. */
     private void onDocumentChanged() {
         if (!session.isOpen()) {
+            editModel.clear();
+            if (editing) leaveEditMode();
             render.clear();
             docView.clear();
             thumbs.setDocument(PageGeometry.empty());
@@ -148,6 +180,7 @@ public class PdfViewer extends JPanel {
             session.lock().unlock();
         }
         boolean sameFile = session.file().equals(shownFile);
+        if (!sameFile || savingEdits) editModel.clear();         // edits belong to one document; after a save they are in the file
         render.clear();
         docView.setHighlights(java.util.List.of(), null);
         docView.setDocument(geo, sameFile);
@@ -166,6 +199,7 @@ public class PdfViewer extends JPanel {
 
     /** Opens a PDF, asking for a password if needed. Adds it to Recent unless disabled in Settings. */
     public void openPdf(File file) throws IOException {
+        if (!confirmEditsHandled()) return;
         boolean opened = session.open(file, this);
         if (opened && AppSettings.rememberRecent()) recent.STORE.add(file);
     }
@@ -198,7 +232,7 @@ public class PdfViewer extends JPanel {
     }
 
     private void reloadCurrent() {
-        if (!session.isOpen()) return;
+        if (!session.isOpen() || !confirmEditsHandled()) return;
         try {
             session.reload(this);
         } catch (IOException ex) {
@@ -218,6 +252,165 @@ public class PdfViewer extends JPanel {
     public void shutdown() {
         render.shutdown();
         session.close();
+    }
+
+    // ------------------------------------------------------------------
+    // Editing: add text, pictures, shapes and drawings; create new PDFs
+    // ------------------------------------------------------------------
+
+    /** True while there are edits that are not saved yet. */
+    public boolean hasUnsavedEdits() { return editModel.isDirty(); }
+
+    /** Turns edit mode on or off (off asks what to do with unsaved edits). */
+    public void setEditing(boolean on) {
+        if (on == editing) return;
+        if (on) {
+            if (!session.isOpen()) {
+                Dialogs.showMessageDialog(this, "Open a PDF first, or create one with New PDF.", "Edit",
+                        JOptionPane.INFORMATION_MESSAGE);
+                header.edit.setSelected(false);
+                return;
+            }
+            editing = true;
+            docView.setPanEnabled(false);
+            docView.setHighlights(java.util.List.of(), null);
+            editCtl.attach();
+            editBar.setVisible(true);
+            editCtl.setTool(EditController.Tool.SELECT);
+            docView.canvas().requestFocusInWindow();
+        } else {
+            if (!confirmEditsHandled()) {
+                header.edit.setSelected(true);
+                return;
+            }
+            leaveEditMode();
+        }
+        header.edit.setSelected(editing);
+        revalidate();
+        repaint();
+    }
+
+    private void leaveEditMode() {
+        editing = false;
+        editCtl.detach();
+        docView.setPanEnabled(true);
+        editBar.setVisible(false);
+        header.edit.setSelected(false);
+        revalidate();
+    }
+
+    /**
+     * If there are unsaved edits, asks to save or discard them.
+     *
+     * @return false if the caller should stop (the user cancelled, or saving failed)
+     */
+    public boolean confirmEditsHandled() {
+        if (!editModel.isDirty()) return true;
+        String name = session.file() == null ? "this PDF" : session.file().getName();
+        int r = Dialogs.showConfirmDialog(this, "You have unsaved edits to " + name + ".\nSave them before continuing?",
+                "Unsaved edits", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (r == JOptionPane.YES_OPTION) return saveEdits();
+        if (r == JOptionPane.NO_OPTION) { editModel.clear(); return true; }
+        return false;
+    }
+
+    /** Writes the pending edits into the open PDF (safely: the original is replaced only on success). */
+    public boolean saveEdits() {
+        if (!editModel.isDirty()) return true;
+        if (!session.isOpen()) return false;
+        EditWriter.Result[] result = new EditWriter.Result[1];
+        java.util.List<EditItem> items = new java.util.ArrayList<>(editModel.items());
+        savingEdits = true;
+        try {
+            session.rewrite(doc -> result[0] = EditWriter.apply(doc, items), session.password());
+        } catch (IOException ex) {
+            Dialogs.showMessageDialog(this, "Could not save your edits. The file is unchanged and your edits are still here.\n\n"
+                    + ex.getMessage(), "Save failed", JOptionPane.ERROR_MESSAGE);
+            return false;
+        } finally {
+            savingEdits = false;
+        }
+        editModel.clear();
+        reportSave(result[0], "Your edits were saved.", false);
+        return true;
+    }
+
+    /** Shows warnings / notices from a save; with {@code always} also confirms plain success. */
+    private void reportSave(EditWriter.Result r, String headline, boolean always) {
+        StringBuilder msg = new StringBuilder();
+        if (r != null) for (String w : r.warnings) msg.append("\u2022 ").append(w).append('\n');
+        String notice = session.takeNotice();
+        if (notice != null) msg.append(msg.length() > 0 ? "\n" : "").append(notice);
+        if (msg.length() > 0 || always) {
+            Dialogs.showMessageDialog(this, msg.length() > 0 ? headline + "\n\n" + msg.toString().strip() : headline, "Saved",
+                    r != null && !r.warnings.isEmpty() ? JOptionPane.WARNING_MESSAGE : JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    /** "Save a copy": the edits go into a new file; this PDF and its pending edits are left as they are. */
+    private void saveEditedCopy() {
+        if (!session.isOpen() || !editModel.isDirty()) {
+            Dialogs.showMessageDialog(this, "There are no unsaved edits to put in a copy.", "Save a copy", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        AppFileChooser chooser = new AppFileChooser(session.file().getParentFile());
+        chooser.setDialogTitle("Save a copy as");
+        chooser.setSelectedFile(new File(session.file().getParentFile(),
+                session.file().getName().replaceFirst("[.][^.]+$", "") + "-edited.pdf"));
+        chooser.setFileFilter(new FileNameExtensionFilter("PDF files", "pdf"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        File out = chooser.getSelectedFile();
+        if (!out.getName().toLowerCase().endsWith(".pdf")) out = new File(out.getParentFile(), out.getName() + ".pdf");
+        if (out.getAbsoluteFile().equals(session.file().getAbsoluteFile())) {
+            Dialogs.showMessageDialog(this, "Choose a different name, or use Save to write into this file.", "Save a copy", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (out.exists() && Dialogs.showConfirmDialog(this, out.getName() + " already exists. Replace it?", "Confirm overwrite",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+        EditWriter.Result[] result = new EditWriter.Result[1];
+        java.util.List<EditItem> items = new java.util.ArrayList<>(editModel.items());
+        try {
+            session.saveCopyTo(out, doc -> result[0] = EditWriter.apply(doc, items));
+        } catch (IOException ex) {
+            Dialogs.showMessageDialog(this, "Could not save the copy: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        reportSave(result[0], "Saved a copy as " + out.getName() + ".\nThis PDF still has your unsaved edits.", true);
+    }
+
+    /** Inserts a blank page after the current one, the same size as it. */
+    public void addBlankPage() {
+        if (!session.isOpen()) {
+            Dialogs.showMessageDialog(this, "Open a PDF first.", "Add page", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (!saveEdits()) return;                       // page numbers shift, so settle pending edits first
+        final int at = Math.max(0, docView.currentPage());
+        try {
+            session.rewrite(doc -> {
+                PDPage current = doc.getPage(at);
+                float[] wh = PageGeometry.sizeOf(current);
+                doc.getPages().insertAfter(new PDPage(new PDRectangle(wh[0], wh[1])), current);
+            }, session.password());
+        } catch (IOException ex) {
+            Dialogs.showMessageDialog(this, "Could not add a page: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        SwingUtilities.invokeLater(() -> docView.goToPage(at + 1));
+    }
+
+    /** Creates a blank PDF (asking for size and location) and opens it ready to edit. */
+    public void newPdf() {
+        if (!confirmEditsHandled()) return;
+        File created = CreateOps.createBlankPdf(this);
+        if (created == null) return;
+        try {
+            session.forgetPassword();
+            openPdf(created);
+            setEditing(true);
+        } catch (IOException ex) {
+            Dialogs.showMessageDialog(this, "Could not open the new PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // ------------------------------------------------------------------

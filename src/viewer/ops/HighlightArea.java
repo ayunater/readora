@@ -11,9 +11,8 @@ package viewer.ops;
  * correctly positioned as the user zooms in or out.
  *
  * <p>Note: {@link #getPage()} is <b>1-indexed</b> to match the page
- * numbers {@code pdfViewer} renders on screen (see
- * {@code createPagePanel(image, i + 1)}), not the 0-based page indices
- * PDFBox itself uses internally.
+ * numbers the viewer shows on screen, not the 0-based page indices
+ * PDFBox itself uses internally. The viewer subtracts one before use.
  */
 public class HighlightArea {
 

@@ -10,12 +10,12 @@ import java.util.function.IntConsumer;
 final class ViewerControls extends JPanel {
 
     final JToggleButton pages = new JToggleButton("Pages", true);
-    final JButton prev = Ui.squareButton("\u25C0", "Previous page");
-    final JButton next = Ui.squareButton("\u25B6", "Next page");
+    final JButton prev = Ui.iconButton("chevron-left", "Previous page");
+    final JButton next = Ui.iconButton("chevron-right", "Next page");
     final JTextField pageField = new JTextField("1", 3);
     final JLabel pageTotal = new JLabel("/ 0");
-    final JButton zoomOut = Ui.squareButton("\u2212", "Zoom out");
-    final JButton zoomIn = Ui.squareButton("+", "Zoom in");
+    final JButton zoomOut = Ui.iconButton("minus", "Zoom out");
+    final JButton zoomIn = Ui.iconButton("plus", "Zoom in");
     final JTextField zoomField = new JTextField("100%", 5);
     final JButton fitWidth = Ui.button("Fit Width");
     final JButton fitPage = Ui.button("Fit Page");

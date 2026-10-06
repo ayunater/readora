@@ -5,6 +5,7 @@ import ui.AppFileChooser;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import viewer.PdfViewer;
+import ui.SvgIcon;
 import ui.Ui;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -63,6 +64,8 @@ public class tools extends JPanel implements ActionListener {
 
     JPanel ToolsPanel;
 
+    JPanel createEditPanel;
+    JButton newPdfButton, editPdfButton, addBlankPageButton;
     JPanel pdfToolsPanel;
 
     JButton organizePagesButton;
@@ -158,6 +161,18 @@ public class tools extends JPanel implements ActionListener {
         headerRow.add(Ui.header("PDF Tools", "Convert, secure, analyze and manage PDFs"), BorderLayout.CENTER);
         add(headerRow, BorderLayout.NORTH);
 
+        createEditPanel = createSectionPanel();
+        newPdfButton = createToolButton("New PDF");
+        editPdfButton = createToolButton("Edit PDF");
+        addBlankPageButton = createToolButton("Add Blank Page");
+        newPdfButton.setIcon(Ui.icon("file-plus", 20, SvgIcon.Tint.BRAND));
+        editPdfButton.setIcon(Ui.icon("file-pen", 20, SvgIcon.Tint.BRAND));
+        addBlankPageButton.setIcon(Ui.icon("plus", 20, SvgIcon.Tint.BRAND));
+        for (JButton b : new JButton[]{newPdfButton, editPdfButton, addBlankPageButton}) b.setIconTextGap(10);
+        createEditPanel.add(newPdfButton);
+        createEditPanel.add(editPdfButton);
+        createEditPanel.add(addBlankPageButton);
+
         pdfToolsPanel = createSectionPanel();
         organizePagesButton = createToolButton("Organize Pages");
         mergePdfButton = createToolButton("Merge PDF");
@@ -173,6 +188,11 @@ public class tools extends JPanel implements ActionListener {
         pdfToolsPanel.add(removePagesButton);
         pdfToolsPanel.add(reorderPagesButton);
         pdfToolsPanel.add(rotatePagesButton);
+
+        ToolsPanel.add(createSectionTitle("Create & Edit"));
+        ToolsPanel.add(Box.createVerticalStrut(8));
+        ToolsPanel.add(createEditPanel);
+        ToolsPanel.add(Box.createVerticalStrut(20));
 
         ToolsPanel.add(createSectionTitle("Tools"));
         ToolsPanel.add(Box.createVerticalStrut(8));
@@ -481,6 +501,18 @@ public class tools extends JPanel implements ActionListener {
                                 }
                             }
                         }.execute();
+                        break;
+                    case "New PDF":
+                        reopenViewer.run();
+                        viewer.newPdf();
+                        break;
+                    case "Edit PDF":
+                        reopenViewer.run();
+                        viewer.setEditing(true);
+                        break;
+                    case "Add Blank Page":
+                        reopenViewer.run();
+                        viewer.addBlankPage();
                         break;
                     case "Organize Pages":
                         reopenViewer.run();

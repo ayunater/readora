@@ -120,7 +120,8 @@ public final class InfoOps extends Ops {
                 d.setProducer(producer.getText());
                 d.setKeywords(keywords.getText());
             }, session.password());
-            info("Metadata saved.", "Edit Metadata");
+            String notice = session.takeNotice();
+            info("Metadata saved." + (notice == null ? "" : "\n\n" + notice), "Edit Metadata");
         } catch (IOException ex) {
             error("Could not save metadata", ex);
         }

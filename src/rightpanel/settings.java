@@ -4,11 +4,13 @@ import ui.Dialogs;
 import app.AppInfo;
 import app.Main;
 import store.AppSettings;
+import ui.Dialogs;
 import ui.Ui;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -70,6 +72,22 @@ public class settings extends JPanel {
         column.add(Box.createVerticalStrut(Ui.GAP));
         column.add(group("Behavior", rememberRecent, confirmExit));
 
+        // ---- File association ("Open with") ----
+        if (app.FileAssociation.isSupported()) {
+            JLabel what = new JLabel("<html>Add Readora to the <b>Open with</b> list for PDF files in your file manager.<br>"
+                    + "<span style='color:gray'>Installed versions (.exe, .msi, .deb) already do this; use it for the portable version.</span></html>");
+            what.setFont(AppFonts.body(Font.PLAIN, 13));
+            JButton add = Ui.button("Add to \"Open with\"");
+            JButton remove = Ui.button("Remove");
+            add.addActionListener(e -> associate(true));
+            remove.addActionListener(e -> associate(false));
+            JPanel info = new JPanel(new BorderLayout());
+            info.setOpaque(false);
+            info.add(what, BorderLayout.CENTER);
+            column.add(Box.createVerticalStrut(Ui.GAP));
+            column.add(group("File association", info, row(add, remove)));
+        }
+
         // ---- Maintenance ----
         JButton clearRecent = Ui.button("Clear Recent Files");
         clearRecent.addActionListener(e -> {
@@ -102,6 +120,16 @@ public class settings extends JPanel {
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         add(scroll, BorderLayout.CENTER);
+    }
+
+    private void associate(boolean add) {
+        try {
+            String msg = add ? app.FileAssociation.register() : app.FileAssociation.unregister();
+            Dialogs.showMessageDialog(this, msg, "File association", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            Dialogs.showMessageDialog(this, "Could not change the file association:\n" + ex.getMessage(),
+                    "File association", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /** Removes temporary data only — never settings or the Recent/Starred lists. */

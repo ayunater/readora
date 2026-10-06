@@ -10,7 +10,7 @@ package viewer.ops;
  *
  * Instances are created by {@link SearchStripper} while scanning the
  * document, and consumed by the search results list in
- * {@code pdfViewer}, which relies on {@link #toString()} for its
+ * {@link viewer.ops.SearchOps}, which relies on {@link #toString()} for its
  * default list-cell display text.
  */
 public class SearchResult {

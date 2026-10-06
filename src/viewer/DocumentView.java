@@ -32,6 +32,7 @@ public final class DocumentView extends Ui.Card {
     private Fit fit = Fit.NONE;
     private int currentPage = 0;
 
+    private boolean panEnabled = true;
     private IntConsumer pageListener = p -> { };
     private DoubleConsumer zoomListener = z -> { };
 
@@ -114,6 +115,15 @@ public final class DocumentView extends Ui.Card {
     public double zoom()      { return zoom; }
     public void repaintPages() { canvas.repaint(); }
     public JComponent canvas() { return canvas; }
+
+    /** The page view as seen by the editor. */
+    public viewer.edit.PageHost pageHost() { return canvas; }
+
+    /** Draws editing overlays (pending edits, selection) on top of each page. */
+    public void setOverlay(viewer.edit.PageOverlay o) { canvas.setOverlay(o); }
+
+    /** While editing, dragging belongs to the tools, so panning is switched off. */
+    public void setPanEnabled(boolean on) { panEnabled = on; }
 
     // ------------------------------------------------------------------
     // Zoom
@@ -249,12 +259,13 @@ public final class DocumentView extends Ui.Card {
             Point start, origin;
             @Override public void mousePressed(MouseEvent e) {
                 canvas.requestFocusInWindow();
+                if (!panEnabled) return;
                 start = e.getLocationOnScreen();
                 origin = scroll.getViewport().getViewPosition();
                 canvas.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
             }
             @Override public void mouseDragged(MouseEvent e) {
-                if (start == null) return;
+                if (start == null || !panEnabled) return;
                 Point now = e.getLocationOnScreen();
                 JViewport vp = scroll.getViewport();
                 int maxX = Math.max(0, canvas.getWidth() - vp.getWidth());

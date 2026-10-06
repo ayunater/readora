@@ -206,22 +206,19 @@ public final class Dialogs {
             Graphics2D g = (Graphics2D) g0.create();
             try {
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 Color from, to;
                 String glyph;
                 switch (type) {
-                    case JOptionPane.ERROR_MESSAGE -> { from = new Color(0xFF6B8A); to = new Color(0xE0334F); glyph = "\u2715"; }
-                    case JOptionPane.WARNING_MESSAGE -> { from = new Color(0xFFC247); to = new Color(0xFF7A18); glyph = "!"; }
-                    case JOptionPane.QUESTION_MESSAGE -> { from = Ui.VIOLET; to = Ui.MAGENTA; glyph = "?"; }
-                    default -> { from = Ui.BLUE; to = Ui.VIOLET; glyph = "i"; }
+                    case JOptionPane.ERROR_MESSAGE -> { from = new Color(0xFF6B8A); to = new Color(0xE0334F); glyph = "x"; }
+                    case JOptionPane.WARNING_MESSAGE -> { from = new Color(0xFFC247); to = new Color(0xFF7A18); glyph = "triangle-alert"; }
+                    case JOptionPane.QUESTION_MESSAGE -> { from = Ui.VIOLET; to = Ui.MAGENTA; glyph = "circle-question-mark"; }
+                    default -> { from = Ui.BLUE; to = Ui.VIOLET; glyph = "info"; }
                 }
                 int s = Math.min(getWidth(), getHeight());
                 g.setPaint(new GradientPaint(0, 0, from, s, s, to));
                 g.fill(new Ellipse2D.Float(0, 0, s, s));
-                g.setColor(Color.WHITE);
-                g.setFont(AppFonts.body(Font.BOLD, 24));
-                FontMetrics fm = g.getFontMetrics();
-                g.drawString(glyph, (s - fm.stringWidth(glyph)) / 2f, (s + fm.getAscent() - fm.getDescent()) / 2f);
+                int gs = Math.round(s * 0.56f);
+                Ui.icon(glyph, gs, SvgIcon.Tint.WHITE).paintIcon(this, g, (s - gs) / 2, (s - gs) / 2);
             } finally {
                 g.dispose();
             }
