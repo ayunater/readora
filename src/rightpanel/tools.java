@@ -65,7 +65,7 @@ public class tools extends JPanel implements ActionListener {
     JPanel ToolsPanel;
 
     JPanel createEditPanel;
-    JButton newPdfButton, editPdfButton, addBlankPageButton;
+    JButton newPdfButton, editPdfButton, addBlankPageButton, removeHiddenDataButton;
     JPanel pdfToolsPanel;
 
     JButton organizePagesButton;
@@ -219,13 +219,16 @@ public class tools extends JPanel implements ActionListener {
         changePasswdButton = createToolButton("Change Password");
         removePasswdButton = createToolButton("Remove Password");
         securityInformationButton = createToolButton("Security Information");
-        editSecurityInformationButton = createToolButton("Edit Security Information");
+        editSecurityInformationButton = createToolButton("Change Permissions");
+        removeHiddenDataButton = createToolButton("Remove Hidden Data");
+        removeHiddenDataButton.setToolTipText("Strip metadata, attachments, scripts, comments and bookmarks before sharing a file");
 
         pdfSecurityPanel.add(addPasswdButton);
         pdfSecurityPanel.add(changePasswdButton);
         pdfSecurityPanel.add(removePasswdButton);
         pdfSecurityPanel.add(securityInformationButton);
         pdfSecurityPanel.add(editSecurityInformationButton);
+        pdfSecurityPanel.add(removeHiddenDataButton);
 
         ToolsPanel.add(createSectionTitle("Security"));
         ToolsPanel.add(Box.createVerticalStrut(8));
@@ -558,7 +561,11 @@ public class tools extends JPanel implements ActionListener {
                         reopenViewer.run();
                         viewer.securityInformation();
                         break;
-                    case "Edit Security Information":
+                    case "Remove Hidden Data":
+                        reopenViewer.run();
+                        viewer.removeHiddenData();
+                        break;
+                    case "Change Permissions":
                         reopenViewer.run();
                         viewer.editPermissions();
                         break;

@@ -125,14 +125,65 @@ public final class PdfSession implements AutoCloseable {
     }
 
     private static String askPassword(Component parent, File f, boolean retry) {
-        JPasswordField field = new JPasswordField(20);
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.add(new JLabel((retry ? "Incorrect password. " : "") + "\"" + f.getName()
-                + "\" is password protected."), BorderLayout.NORTH);
-        panel.add(field, BorderLayout.CENTER);
-        int r = Dialogs.showConfirmDialog(parent, panel, "Password required",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        return r == JOptionPane.OK_OPTION ? new String(field.getPassword()) : null;
+        return promptPassword(parent, "Password required",
+                "\"" + f.getName() + "\" is password protected.\nEnter its password to open it.", retry);
+    }
+
+    /**
+     * Asks for a password in Readora's own dialog (with a show/hide eye).
+     * The typed characters are wiped from memory as soon as they have been read.
+     *
+     * @return the password, or null if cancelled
+     */
+    public static String promptPassword(Component parent, String title, String message, boolean retry) {
+        ui.SecretField field = new ui.SecretField(22);
+        JPanel body = new JPanel(new BorderLayout(14, 0));
+        body.setOpaque(false);
+        JLabel icon = new JLabel(ui.Ui.icon("lock", 30, ui.SvgIcon.Tint.BRAND));
+        icon.setVerticalAlignment(SwingConstants.TOP);
+        String html = message.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br>");
+        JLabel text = new JLabel("<html><div style='width:300px'>"
+                + (retry ? "<b style='color:#E0334F'>That password is not correct.</b><br>" : "") + html + "</div></html>");
+        JPanel right = new JPanel(new BorderLayout(0, 10));
+        right.setOpaque(false);
+        right.add(text, BorderLayout.NORTH);
+        right.add(field, BorderLayout.CENTER);
+        body.add(icon, BorderLayout.WEST);
+        body.add(right, BorderLayout.CENTER);
+        SwingUtilities.invokeLater(field::requestFocusInWindow);
+        int r = ui.Dialogs.showConfirmDialog(parent, body, title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        char[] chars = field.getChars();
+        field.clear();
+        String pw = r == JOptionPane.OK_OPTION ? new String(chars) : null;
+        java.util.Arrays.fill(chars, '\0');
+        return pw;
+    }
+
+    /**
+     * For changing a file's security you must hold its <i>permissions</i> (owner) password. If the file was
+     * opened with only the open password, asks for the permissions password and reopens the file with it.
+     *
+     * @return true if the file is now open with owner rights
+     */
+    public boolean unlockOwner(Component parent) {
+        if (document != null && document.getCurrentAccessPermission().isOwnerPermission()) return true;
+        if (file == null) return false;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            String pw = promptPassword(parent, "Permissions password",
+                    "To change the security of \"" + file.getName() + "\" you need its permissions (owner) password.\n"
+                            + "The password you opened it with only allows what the owner permits.", attempt > 0);
+            if (pw == null) return false;
+            try {
+                PDDocument d = Loader.loadPDF(file, pw);
+                if (d.getCurrentAccessPermission().isOwnerPermission()) { install(d, file, pw); return true; }
+                closeQuietly(d);
+            } catch (InvalidPasswordException ignored) {
+                // try again
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     /**

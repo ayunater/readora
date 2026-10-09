@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Readora
+Comment=Readora: The PDF App
+Exec=readora
+Icon=readora
+Terminal=false
+Type=Application
+Categories=Office;Viewer;
+MimeType=application/pdf;

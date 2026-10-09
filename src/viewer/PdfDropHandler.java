@@ -36,6 +36,27 @@ public final class PdfDropHandler extends TransferHandler {
     }
 
     /**
+     * A drop target for one component that also reports drag hover (so it can light up while a file is over it).
+     * Returns null when there is no display to drag on.
+     */
+    public static DropTarget hoverTarget(JComponent c, Consumer<File> onPdf, Consumer<Boolean> hover) {
+        if (java.awt.GraphicsEnvironment.isHeadless()) return null;
+        return new DropTarget(c, DnDConstants.ACTION_COPY, new DropTargetAdapter() {
+            @Override public void dragEnter(DropTargetDragEvent e) {
+                if (e.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) { e.acceptDrag(DnDConstants.ACTION_COPY); hover.accept(true); }
+                else e.rejectDrag();
+            }
+            @Override public void dragExit(DropTargetEvent e) { hover.accept(false); }
+            @Override public void drop(DropTargetDropEvent e) {
+                hover.accept(false);
+                if (!e.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) { e.rejectDrop(); return; }
+                e.acceptDrop(DnDConstants.ACTION_COPY);
+                e.dropComplete(handle(c, filesIn(e.getTransferable()), onPdf));
+            }
+        }, true);
+    }
+
+    /**
      * Accept drops on {@code root} and on every descendant whose own handling would otherwise swallow them.
      */
     public static void installEverywhere(Container root, Consumer<File> onPdf) {

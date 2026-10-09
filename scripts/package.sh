@@ -22,7 +22,7 @@ rm -rf installers && mkdir -p installers
 COMMON=(--app-version "$VERSION" --vendor "Readora" --description "Readora: The PDF App"
         --input dist --main-jar Readora.jar --main-class app.Main --icon packaging/logo.png
         --add-modules java.base,java.desktop,java.logging,java.naming,java.prefs,java.sql,java.xml,jdk.unsupported,jdk.charsets,jdk.localedata
-        --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6")
+        --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6 --disable-plugin dedup-legal-notices")
 # These options are only valid for real installers (deb/rpm), not for the portable app-image.
 # --file-associations puts Readora in file managers' "Open with" list for PDFs; the resource override adds
 # "%f" to the desktop entry's Exec line (without it the file manager starts Readora but never says which file).

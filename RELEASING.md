@@ -6,7 +6,7 @@ Installers and portable builds are **not committed** (50-100 MB each). They are 
 
 | Artifact | Status |
 |---|---|
-| `build.sh` / tests / runnable jar (Linux) | Built, 123 tests pass, jar launches. Also verified from a folder path containing spaces. |
+| `build.sh` / tests / runnable jar (Linux) | Built, 159 tests pass, jar launches. Also verified from a folder path containing spaces. |
 | `.deb` (Ubuntu/Debian) | **Built, installed, launched and uninstalled** on Ubuntu 24.04. |
 | Portable Linux zip | Built, unzipped and launched. |
 | Whole UI audit inside the *packaged* runtime | 18 checks, 0 exceptions (see below). |
@@ -19,7 +19,7 @@ Installers and portable builds are **not committed** (50-100 MB each). They are 
 ## 1. Pre-flight
 
 ```bash
-./build.sh test                      # build + 123 checks; must end with "0 failed"
+./build.sh test                      # build + 159 checks; must end with "0 failed"
 ./build.sh run                       # click through the app once
 ```
 

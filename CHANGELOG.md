@@ -5,6 +5,26 @@ All notable changes to Readora are documented here. The format follows
 
 ## [1.0.0] - first public release
 
+### Added - security and privacy
+- **Protection dialog** replacing the bare password forms: open and permissions passwords (either or both),
+  confirmation, show/hide, strength meter, strong-password generator, AES-256 / AES-128, eight permissions.
+  Rules are validated (restrictions need a permissions password, AES-128 rejects non-Latin-1 passwords...).
+- **Security information** panel: encryption algorithm (flags outdated RC4), what the file allows, your access
+  level, and hidden data found.
+- **Remove Hidden Data** tool: scans for and removes metadata (info, XMP, thumbnails), attachments, scripts and
+  automatic actions, comments/markup and bookmarks; links and form fields are kept; saves a cleaned copy by default.
+- **True redaction** (Redact tool, key X): redacted pages are flattened to images so the covered content is
+  destroyed in the file. Verified by searching the saved file's raw bytes. Saving asks for confirmation first.
+- **Changing or removing protection now requires the permissions (owner) password.** Before, someone who knew only
+  the open password could remove the restrictions.
+- Password prompt redesigned (lock icon, eye toggle, "that password is not correct"); password arrays are wiped
+  after use; password-protected files stay out of Recent by default (setting), and are never previewed on Home.
+
+### Changed - Home
+- **New Home screen**: gradient wordmark, a drop zone that lights up while you drag a PDF over it (and opens the
+  file chooser on click), quick-action cards with descriptions, and **recent files as cards with a first-page
+  preview** (loaded in the background; right-click for Open, Copy path, Remove). Friendly empty state.
+
 ### Added - create and edit PDFs
 - **New PDF**: create a blank document (A4 / Letter / Legal / A3 / A5, portrait or landscape, 1-500 pages) that
   opens straight in the editor. Available from Home, Tools and the viewer.

@@ -1,0 +1,24 @@
+pkgname=readora
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Readora: The PDF App"
+arch=('x86_64')
+url="https://github.com/ayunater"
+license=('custom')
+depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libxext' 'libxrender' 'libxtst' 'libxi' 'alsa-lib' 'libpng' 'libjpeg-turbo' 'lcms2' 'giflib')
+source=('readora.desktop' 'logo.png')
+sha256sums=('SKIP' 'SKIP')
+
+package() {
+    install -d "$pkgdir/opt/readora"
+    cp -a "$startdir/Readora/." "$pkgdir/opt/readora/"
+
+    install -d "$pkgdir/usr/bin"
+    ln -s /opt/readora/bin/Readora "$pkgdir/usr/bin/readora"
+
+    install -Dm644 "$srcdir/readora.desktop" \
+        "$pkgdir/usr/share/applications/readora.desktop"
+
+    install -Dm644 "$srcdir/logo.png" \
+        "$pkgdir/usr/share/pixmaps/readora.png"
+}

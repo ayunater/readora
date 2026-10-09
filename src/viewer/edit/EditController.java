@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  */
 public final class EditController extends MouseAdapter implements KeyListener {
 
-    public enum Tool { SELECT, TEXT, IMAGE, RECT, ELLIPSE, LINE, HIGHLIGHT, PEN }
+    public enum Tool { SELECT, TEXT, IMAGE, RECT, ELLIPSE, LINE, HIGHLIGHT, PEN, REDACT }
 
     private enum Mode { NONE, MOVE, RESIZE, CREATE, DRAW }
 
@@ -263,6 +263,9 @@ public final class EditController extends MouseAdapter implements KeyListener {
             case HIGHLIGHT:
                 s.kind = EditItem.Shape.Kind.HIGHLIGHT; s.fill = EditProps.HIGHLIGHT; s.stroke = null;
                 break;
+            case REDACT:
+                s.kind = EditItem.Shape.Kind.REDACT; s.fill = Color.BLACK; s.stroke = null;
+                break;
             default: s.kind = EditItem.Shape.Kind.RECT; s.stroke = props.color; s.fill = props.fill;
         }
         return s;
@@ -292,7 +295,7 @@ public final class EditController extends MouseAdapter implements KeyListener {
         boolean big = box.width >= 3 || box.height >= 3;
         if (tool == Tool.LINE ? (box.width + box.height) >= 4 : (box.width >= 4 && box.height >= 4)) {
             model.add(newShape(box, pt));
-            if (tool != Tool.HIGHLIGHT) setTool(Tool.SELECT);
+            if (tool != Tool.HIGHLIGHT && tool != Tool.REDACT) setTool(Tool.SELECT);
         } else if (!big) {
             host.component().repaint();                       // a click without a drag draws nothing
         }
@@ -435,6 +438,7 @@ public final class EditController extends MouseAdapter implements KeyListener {
             case KeyEvent.VK_L: setTool(Tool.LINE); return;
             case KeyEvent.VK_H: setTool(Tool.HIGHLIGHT); return;
             case KeyEvent.VK_P: setTool(Tool.PEN); return;
+            case KeyEvent.VK_X: setTool(Tool.REDACT); return;
             default:
         }
     }

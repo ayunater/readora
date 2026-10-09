@@ -62,7 +62,9 @@ public abstract class EditItem {
 
     /** Rectangle, ellipse, straight line or highlighter band. */
     public static final class Shape extends EditItem {
-        public enum Kind { RECT, ELLIPSE, LINE, HIGHLIGHT }
+        public enum Kind { RECT, ELLIPSE, LINE, HIGHLIGHT,
+            /** A permanent black-out: on save the page is flattened and what is underneath is destroyed. */
+            REDACT }
 
         public Kind kind = Kind.RECT;
         public Color stroke = new Color(0xD32F2F);

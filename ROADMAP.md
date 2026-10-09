@@ -17,12 +17,12 @@ Ideas for version 2. Nothing here is a promise; it is a list of what v1 delibera
 - **Sticky notes, comments and real highlight/underline/strike-through annotations** that other readers show
   in their annotation panels.
 - **Fill in forms** (AcroForm fields) and **sign** with a drawn or typed signature.
-- **True redaction** that removes the underlying content (a black box in v1 only covers it).
 - Edit text with arbitrary system fonts; alignment buttons; rotate and flip placed items; snap and align guides.
 - Copy and paste items between pages and between documents.
 - Insert pages from another PDF; delete the current page from the viewer.
 
 ## Tools
+- Redact by searching for text (v1 redacts the areas you draw).
 - Compress / optimise a PDF; flatten annotations.
 - OCR for scanned documents.
 - Compare two PDFs.

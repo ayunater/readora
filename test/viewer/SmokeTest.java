@@ -172,6 +172,7 @@ public class SmokeTest {
         // ---------- E. Editor: items must land where they were placed, on every page rotation ----------
         editorTests(tmp);
         openWithTests(tmp);
+        securityTests(tmp);
 
         s.close();
         check("session: closed", !s.isOpen());
@@ -309,6 +310,173 @@ public class SmokeTest {
             public boolean isDataFlavorSupported(java.awt.datatransfer.DataFlavor f) { return f.equals(java.awt.datatransfer.DataFlavor.javaFileListFlavor); }
             public Object getTransferData(java.awt.datatransfer.DataFlavor f) { return files; }
         };
+    }
+
+    // ======================================================================
+    // Security tests
+    // ======================================================================
+
+    static boolean containsBytes(File f, String needle) throws Exception {
+        return new String(Files.readAllBytes(f.toPath()), java.nio.charset.StandardCharsets.ISO_8859_1).contains(needle);
+    }
+
+    static void securityTests(Path tmp) throws Exception {
+        // -- password strength + generator --
+        var PS = viewer.ops.PasswordStrength.class;
+        check("strength: empty is EMPTY", viewer.ops.PasswordStrength.evaluate("".toCharArray()).level() == viewer.ops.PasswordStrength.Level.EMPTY);
+        check("strength: '123456', 'password', 'abcdefgh' and 'aaaaaaaaaa' are all WEAK",
+              java.util.stream.Stream.of("123456", "password", "abcdefgh", "aaaaaaaaaa", "Password1").allMatch(x ->
+                  viewer.ops.PasswordStrength.evaluate(x.toCharArray()).level() == viewer.ops.PasswordStrength.Level.WEAK));
+        var okMid = viewer.ops.PasswordStrength.evaluate("Tr0ub4dor&3".toCharArray());
+        check("strength: a decent 11-char mixed password is GOOD, not STRONG", okMid.level() == viewer.ops.PasswordStrength.Level.GOOD);
+        check("strength: a long passphrase is STRONG", viewer.ops.PasswordStrength.evaluate("correct-Horse-battery-9-staple".toCharArray()).level() == viewer.ops.PasswordStrength.Level.STRONG);
+        char[] g1 = viewer.ops.PasswordStrength.generate(16), g2 = viewer.ops.PasswordStrength.generate(16);
+        String gs = new String(g1);
+        check("generator: 16 chars with lower, upper, digit and symbol; two calls differ; result rated STRONG",
+              g1.length == 16 && gs.matches(".*[a-z].*") && gs.matches(".*[A-Z].*") && gs.matches(".*[0-9].*") && gs.matches(".*[^A-Za-z0-9].*")
+              && !gs.equals(new String(g2)) && viewer.ops.PasswordStrength.evaluate(g1).level() == viewer.ops.PasswordStrength.Level.STRONG);
+
+        // -- protection options: validation --
+        var o = new viewer.ops.ProtectionOptions();
+        check("options: nothing chosen is rejected", o.validate() != null);
+        o.openPassword = "open-pass".toCharArray();
+        check("options: an open password alone is valid", o.validate() == null);
+        o.allowed[0] = false;
+        check("options: restrictions without a permissions password are rejected", o.validate() != null);
+        o.permissionsPassword = "own-pass".toCharArray();
+        check("options: restrictions + permissions password are valid", o.validate() == null);
+        o.permissionsPassword = "open-pass".toCharArray();
+        check("options: identical passwords are detected", o.passwordsMatch());
+        o.permissionsPassword = "own-pass".toCharArray(); o.keyBits = 128; o.openPassword = "p\u0430ss\u0436".toCharArray();
+        check("options: AES-128 refuses non-Latin-1 passwords (readers disagree on the encoding)", o.validate() != null);
+        o.keyBits = 256;
+        check("options: AES-256 accepts them", o.validate() == null);
+        check("options: reopen with the permissions password when there is one", "own-pass".equals(o.reopenPassword()));
+
+        // -- protection options: the real encryption they produce --
+        File plain = new File(tmp.toFile(), "sec-plain.pdf");
+        try (PDDocument d = new PDDocument()) { d.addPage(new PDPage()); d.save(plain); }
+        for (int bits : new int[]{256, 128}) {
+            var po = new viewer.ops.ProtectionOptions();
+            po.keyBits = bits; po.openPassword = "open-123-XY".toCharArray(); po.permissionsPassword = "owner-456-XY".toCharArray();
+            po.allowed[0] = false; po.allowed[3] = false;                                   // no printing, no copying
+            File prot = new File(tmp.toFile(), "sec-" + bits + ".pdf");
+            try (PDDocument d = Loader.loadPDF(plain)) { d.protect(po.toPolicy()); d.save(prot); }
+            boolean wrong; try { Loader.loadPDF(prot, "nope").close(); wrong = false; } catch (org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException e) { wrong = true; }
+            boolean none; try { Loader.loadPDF(prot).close(); none = false; } catch (org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException e) { none = true; }
+            check("AES-" + bits + ": wrong password and no password are both refused", wrong && none);
+            try (PDDocument d = Loader.loadPDF(prot, "open-123-XY")) {
+                var ap = d.getCurrentAccessPermission();
+                check("AES-" + bits + ": opening with the open password honours the restrictions (no print, no copy, still can fill forms)",
+                      !ap.canPrint() && !ap.canExtractContent() && ap.canFillInForm() && !ap.isOwnerPermission());
+                check("AES-" + bits + ": key length recorded as " + bits + " bits", d.getEncryption().getLength() == bits);
+            }
+            try (PDDocument d = Loader.loadPDF(prot, "owner-456-XY")) {
+                check("AES-" + bits + ": the permissions password gives full control", d.getCurrentAccessPermission().isOwnerPermission());
+            }
+        }
+        // permissions password only: anyone can open it, but the restrictions bind
+        var ro = new viewer.ops.ProtectionOptions();
+        ro.permissionsPassword = "owner-only-77".toCharArray(); ro.allowed[2] = false; ro.allowed[3] = false;
+        File restrictedOnly = new File(tmp.toFile(), "sec-restricted.pdf");
+        try (PDDocument d = Loader.loadPDF(plain)) { d.protect(ro.toPolicy()); d.save(restrictedOnly); }
+        try (PDDocument d = Loader.loadPDF(restrictedOnly)) {
+            check("restrict-only file: opens with no password, but modifying and copying are blocked",
+                  !d.getCurrentAccessPermission().canModify() && !d.getCurrentAccessPermission().canExtractContent()
+                  && d.getCurrentAccessPermission().canPrint());
+        }
+
+        // -- hidden data: scan and clean --
+        File dirty = new File(tmp.toFile(), "dirty.pdf");
+        try (PDDocument d = new PDDocument()) {
+            var page = new PDPage(); d.addPage(page);
+            var info = d.getDocumentInformation(); info.setTitle("Merger plan"); info.setAuthor("Jane Doe"); info.setCustomMetadataValue("Project", "Falcon");
+            var cat = d.getDocumentCatalog();
+            var md = new org.apache.pdfbox.pdmodel.common.PDMetadata(d); md.importXMPMetadata("<x:xmpmeta xmlns:x='adobe:ns:meta/'/>".getBytes()); cat.setMetadata(md);
+            var names = new org.apache.pdfbox.pdmodel.PDDocumentNameDictionary(cat);
+            var ef = new org.apache.pdfbox.pdmodel.common.filespecification.PDEmbeddedFile(d, new java.io.ByteArrayInputStream("hidden".getBytes()));
+            var fs = new org.apache.pdfbox.pdmodel.common.filespecification.PDComplexFileSpecification(); fs.setFile("secret.txt"); fs.setEmbeddedFile(ef);
+            var embedded = new org.apache.pdfbox.pdmodel.PDEmbeddedFilesNameTreeNode(); embedded.setNames(java.util.Map.of("secret.txt", fs)); names.setEmbeddedFiles(embedded);
+            var js = new org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript("app.alert('hi')");
+            var jt = new org.apache.pdfbox.pdmodel.PDJavascriptNameTreeNode(); jt.setNames(java.util.Map.of("init", js)); names.setJavascript(jt);
+            cat.setNames(names);
+            cat.setOpenAction(new org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript("this.print()"));
+            var link = new org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink();
+            link.setRectangle(new org.apache.pdfbox.pdmodel.common.PDRectangle(10, 10, 50, 20));
+            link.setAction(new org.apache.pdfbox.pdmodel.interactive.action.PDActionJavaScript("evil()"));
+            var note = new org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationText(); note.setContents("call him before Friday");
+            note.setRectangle(new org.apache.pdfbox.pdmodel.common.PDRectangle(80, 80, 20, 20));
+            page.setAnnotations(new ArrayList<>(List.of(link, note)));
+            var outline = new org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline();
+            var item = new org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem(); item.setTitle("Layoffs chapter"); outline.addLast(item);
+            cat.setDocumentOutline(outline);
+            d.save(dirty);
+        }
+        try (PDDocument d = Loader.loadPDF(dirty)) {
+            var rep = viewer.ops.Sanitizer.scan(d);
+            check("scan: finds metadata (Title, Author and a custom field), XMP, the attachment, 3 scripts, the comment and the bookmarks",
+                  rep.infoFields.containsAll(List.of("Title", "Author", "Project")) && rep.xmp && rep.attachments == 1
+                  && rep.scripts == 3 && rep.comments == 1 && rep.bookmarks && !rep.isClean());
+            viewer.ops.Sanitizer.apply(d, new viewer.ops.Sanitizer.Options(false, false, false, true, false));
+            var partial = viewer.ops.Sanitizer.scan(d);
+            check("clean (comments only): the comment goes, metadata and the rest stay", partial.comments == 0 && partial.hasMetadata() && partial.attachments == 1 && partial.bookmarks);
+        }
+        try (PDDocument d = Loader.loadPDF(dirty)) {
+            viewer.ops.Sanitizer.apply(d, viewer.ops.Sanitizer.Options.all());
+            File cleaned = new File(tmp.toFile(), "cleaned.pdf"); d.save(cleaned);
+            try (PDDocument c = Loader.loadPDF(cleaned)) {
+                var rep = viewer.ops.Sanitizer.scan(c);
+                check("clean (everything): a re-opened file reports no metadata, attachments, scripts, comments or bookmarks", rep.isClean());
+                check("clean: the link survives (the document still works), only its script is gone", c.getPage(0).getAnnotations().size() == 1);
+                check("clean: the author name is gone from the document info", c.getDocumentInformation().getAuthor() == null);
+            }
+        }
+
+        // -- TRUE redaction: the secret must be gone from the FILE, not just hidden --
+        File secret = new File(tmp.toFile(), "secret.pdf");
+        try (PDDocument d = new PDDocument()) {
+            for (String txt : new String[]{"TOP-SECRET-4711 salary 90000", "KEEP-ME-999 public"}) {
+                var pg = new PDPage(org.apache.pdfbox.pdmodel.common.PDRectangle.A4); d.addPage(pg);
+                try (var cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(d, pg, org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode.OVERWRITE, false)) {
+                    cs.beginText(); cs.setFont(new org.apache.pdfbox.pdmodel.font.PDType1Font(org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA), 18);
+                    cs.newLineAtOffset(50, 700); cs.showText(txt); cs.endText();
+                }
+            }
+            d.save(secret, org.apache.pdfbox.pdfwriter.compress.CompressParameters.NO_COMPRESSION);
+        }
+        check("redact setup: the secret text is visible in the raw bytes of the original file", containsBytes(secret, "TOP-SECRET-4711"));
+        File redacted = new File(tmp.toFile(), "redacted.pdf");
+        try (PDDocument d = Loader.loadPDF(secret)) {
+            var box = shape(0, viewer.edit.EditItem.Shape.Kind.REDACT, 40, 120, 330, 36, java.awt.Color.BLACK);   // visual y = 842 - 700 = 142 baseline
+            var res = viewer.edit.EditWriter.apply(d, List.of(box));
+            check("redact: one page flattened and the user is told", res.redactedPages == 1 && !res.warnings.isEmpty());
+            d.save(redacted, org.apache.pdfbox.pdfwriter.compress.CompressParameters.NO_COMPRESSION);
+        }
+        check("redact: the secret is NOT in the raw bytes of the saved file", !containsBytes(redacted, "TOP-SECRET-4711") && !containsBytes(redacted, "salary"));
+        try (PDDocument d = Loader.loadPDF(redacted)) {
+            String all = new org.apache.pdfbox.text.PDFTextStripper().getText(d);
+            check("redact: text extraction no longer finds it, and the other page's text is untouched", !all.contains("SECRET") && all.contains("KEEP-ME-999"));
+            check("redact: the flattened page has no fonts left (nothing to recover)", d.getPage(0).getResources().getFontNames().iterator().hasNext() == false);
+            var img = new PDFRenderer(d).renderImage(0, 1f);
+            check("redact: the box is solid black on the page", near(img.getRGB(100, 140), 0, 0, 0, 6) && near(img.getRGB(300, 130), 0, 0, 0, 6));
+            check("redact: the rest of the page is still white and rendered", near(img.getRGB(100, 400), 255, 255, 255, 6));
+            check("redact: the other page stays a normal text page (still has its font)", d.getPage(1).getResources().getFontNames().iterator().hasNext());
+        }
+        // redaction on a rotated page: the box must land on the same visual spot
+        File rot = new File(tmp.toFile(), "rot-secret.pdf");
+        try (PDDocument d = new PDDocument()) {
+            var pg = new PDPage(new org.apache.pdfbox.pdmodel.common.PDRectangle(300, 400)); pg.setRotation(90); d.addPage(pg);
+            try (var cs = new org.apache.pdfbox.pdmodel.PDPageContentStream(d, pg, org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode.OVERWRITE, false)) {
+                cs.setNonStrokingColor(java.awt.Color.RED); cs.addRect(0, 0, 300, 400); cs.fill();
+            }
+            var box = shape(0, viewer.edit.EditItem.Shape.Kind.REDACT, 100, 50, 40, 30, java.awt.Color.BLACK);
+            viewer.edit.EditWriter.apply(d, List.of(box)); d.save(rot);
+        }
+        try (PDDocument d = Loader.loadPDF(rot)) {
+            var img = new PDFRenderer(d).renderImage(0, 1f);
+            check("redact on a 90-degree page: black exactly at the chosen visual spot, red elsewhere",
+                  near(img.getRGB(120, 65), 0, 0, 0, 6) && near(img.getRGB(250, 200), 255, 0, 0, 14));
+        }
     }
 
     // ======================================================================

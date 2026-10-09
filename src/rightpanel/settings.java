@@ -23,6 +23,7 @@ public class settings extends JPanel {
     private final Main main;
     private final JCheckBox rememberRecent = new JCheckBox("Remember recent files");
     private final JCheckBox confirmExit = new JCheckBox("Confirm before exit");
+    private final JCheckBox hideProtected = new JCheckBox("Keep password-protected files out of Recent");
 
     /** Files in the cache folder that hold user data and must survive "Clear Cache". */
     private static final Set<String> KEEP = Set.of(
@@ -61,7 +62,11 @@ public class settings extends JPanel {
         // ---- Behaviour ----
         rememberRecent.setSelected(AppSettings.rememberRecent());
         confirmExit.setSelected(AppSettings.confirmExit());
-        for (JCheckBox c : new JCheckBox[]{rememberRecent, confirmExit}) {
+        hideProtected.setSelected(AppSettings.hideProtectedFromRecent());
+        hideProtected.setToolTipText("Their file names are not saved in the Recent list");
+        hideProtected.addActionListener(e ->
+                AppSettings.set("hideProtectedFromRecent", String.valueOf(hideProtected.isSelected())));
+        for (JCheckBox c : new JCheckBox[]{rememberRecent, confirmExit, hideProtected}) {
             c.setFont(AppFonts.body(Font.PLAIN, 14));
             c.setOpaque(false);
         }
@@ -70,7 +75,7 @@ public class settings extends JPanel {
         confirmExit.addActionListener(e ->
                 AppSettings.set("confirmExit", String.valueOf(confirmExit.isSelected())));
         column.add(Box.createVerticalStrut(Ui.GAP));
-        column.add(group("Behavior", rememberRecent, confirmExit));
+        column.add(group("Behavior", rememberRecent, hideProtected, confirmExit));
 
         // ---- File association ("Open with") ----
         if (app.FileAssociation.isSupported()) {

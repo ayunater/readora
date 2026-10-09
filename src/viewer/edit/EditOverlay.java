@@ -102,6 +102,14 @@ public final class EditOverlay implements PageOverlay {
         Rectangle2D.Double b = it.bounds;
         if (it instanceof EditItem.Shape s) {
             Composite old = g.getComposite();
+            if (s.kind == EditItem.Shape.Kind.REDACT) {
+                g.setColor(new Color(0, 0, 0, 215));
+                g.fill(new Rectangle2D.Double(b.x, b.y, b.width, b.height));
+                g.setColor(new Color(0xE0334F));
+                g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[]{5f, 3f}, 0f));
+                g.draw(new Rectangle2D.Double(b.x, b.y, b.width, b.height));
+                return;
+            }
             boolean hl = s.kind == EditItem.Shape.Kind.HIGHLIGHT;
             float alpha = hl ? 0.45f : s.opacity;
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));

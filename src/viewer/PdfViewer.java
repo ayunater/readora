@@ -201,7 +201,8 @@ public class PdfViewer extends JPanel {
     public void openPdf(File file) throws IOException {
         if (!confirmEditsHandled()) return;
         boolean opened = session.open(file, this);
-        if (opened && AppSettings.rememberRecent()) recent.STORE.add(file);
+        boolean protectedFile = opened && session.document().isEncrypted();
+        if (opened && AppSettings.rememberRecent() && !(protectedFile && AppSettings.hideProtectedFromRecent())) recent.STORE.add(file);
     }
 
     /** Opens a file the app just produced (split/extract/watermark output). */
@@ -320,6 +321,15 @@ public class PdfViewer extends JPanel {
         if (!session.isOpen()) return false;
         EditWriter.Result[] result = new EditWriter.Result[1];
         java.util.List<EditItem> items = new java.util.ArrayList<>(editModel.items());
+        long redactions = items.stream().filter(i -> i instanceof EditItem.Shape rs && rs.kind == EditItem.Shape.Kind.REDACT).count();
+        if (redactions > 0) {
+            long pages = items.stream().filter(i -> i instanceof EditItem.Shape rs && rs.kind == EditItem.Shape.Kind.REDACT).map(i -> i.page).distinct().count();
+            if (Dialogs.showConfirmDialog(this, "You marked " + redactions + " area(s) for redaction.\n\n"
+                    + "Saving makes this permanent: the covered text and pictures are destroyed, and the " + pages
+                    + " affected page(s) become images whose text can no longer be selected or searched. "
+                    + "It cannot be undone after saving.\n\nTip: use \"Save a copy\" to keep the original.\n\nRedact and save?",
+                    "Permanent redaction", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return false;
+        }
         savingEdits = true;
         try {
             session.rewrite(doc -> result[0] = EditWriter.apply(doc, items), session.password());
@@ -446,6 +456,7 @@ public class PdfViewer extends JPanel {
     public void changePassword()                        { security.changePassword(); }
     public void removePassword()                        { security.removePassword(); }
     public void securityInformation()                   { security.securityInformation(); }
+    public void removeHiddenData()                      { security.removeHiddenData(); }
     public void editPermissions()                       { security.editPermissions(); }
     public void searchTextThroughPdf() throws IOException { search.search(); }
     public void printPdf()                              { print.printPdf(); }

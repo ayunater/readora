@@ -33,6 +33,8 @@ public final class EditWriter {
     public static final class Result {
         public final List<String> warnings = new ArrayList<>();
         public int itemsWritten;
+        /** Pages that were flattened to images to redact them. */
+        public int redactedPages;
     }
 
     private EditWriter() { }
@@ -40,10 +42,15 @@ public final class EditWriter {
     public static Result apply(PDDocument doc, Collection<EditItem> items) throws IOException {
         Result result = new Result();
         Map<Integer, List<EditItem>> byPage = new TreeMap<>();
+        Map<Integer, List<java.awt.geom.Rectangle2D>> redactions = new TreeMap<>();
         for (EditItem it : items) {
             if (it.page < 0 || it.page >= doc.getNumberOfPages()) {
                 result.warnings.add("An item on page " + (it.page + 1) + " was skipped: the page no longer exists.");
                 continue;
+            }
+            if (it instanceof EditItem.Shape rs && rs.kind == EditItem.Shape.Kind.REDACT) {
+                redactions.computeIfAbsent(it.page, k -> new ArrayList<>()).add(new Rectangle2D.Double(it.bounds.x, it.bounds.y, it.bounds.width, it.bounds.height));
+                continue;                                  // handled below, after everything else is on the page
             }
             byPage.computeIfAbsent(it.page, k -> new ArrayList<>()).add(it);
         }
@@ -68,6 +75,17 @@ public final class EditWriter {
                     }
                 }
             }
+        }
+        // Redaction last, so annotations and added items on the same page are part of what gets flattened.
+        for (Map.Entry<Integer, List<java.awt.geom.Rectangle2D>> e : redactions.entrySet()) {
+            Redactor.flatten(doc, e.getKey(), e.getValue());
+            result.redactedPages++;
+            result.itemsWritten += e.getValue().size();
+        }
+        if (result.redactedPages > 0) {
+            result.warnings.add(result.redactedPages + " page(s) with redactions were converted to images, so the covered content is "
+                    + "permanently gone, but their text can no longer be selected or searched. Bookmarks, metadata and other pages "
+                    + "were not changed; use Tools \u2192 Remove Hidden Data to clean those too.");
         }
         return result;
     }

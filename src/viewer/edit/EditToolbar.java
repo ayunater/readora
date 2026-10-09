@@ -80,6 +80,7 @@ public final class EditToolbar extends Ui.Card {
         tool(p, group, EditController.Tool.LINE, "slash", "Line  (L)");
         tool(p, group, EditController.Tool.HIGHLIGHT, "highlighter", "Highlighter  (H)");
         tool(p, group, EditController.Tool.PEN, "pen-line", "Freehand pen  (P)");
+        tool(p, group, EditController.Tool.REDACT, "eraser", "Redact  (X) \u2013 permanently removes what is underneath when you save");
         toolButtons.get(EditController.Tool.SELECT).setSelected(true);
         p.add(Box.createHorizontalStrut(10));
 
@@ -94,7 +95,7 @@ public final class EditToolbar extends Ui.Card {
         fillOn.addActionListener(e -> {
             if (syncing) return;
             props.fill = fillOn.isSelected() ? (props.fill != null ? props.fill : new Color(0xFFF59D)) : null;
-            ctl.applyToSelected(it -> { if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.LINE && s.kind != EditItem.Shape.Kind.HIGHLIGHT) s.fill = props.fill; });
+            ctl.applyToSelected(it -> { if (it instanceof EditItem.Shape s && (s.kind == EditItem.Shape.Kind.RECT || s.kind == EditItem.Shape.Kind.ELLIPSE)) s.fill = props.fill; });
             sync();
         });
         p.add(fillOn);
@@ -106,7 +107,7 @@ public final class EditToolbar extends Ui.Card {
             Color c = AppColorChooser.pick(this, "Fill colour", props.fill != null ? props.fill : new Color(0xFFF59D));
             if (c == null) return;
             props.fill = c;
-            ctl.applyToSelected(it -> { if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.LINE && s.kind != EditItem.Shape.Kind.HIGHLIGHT) s.fill = c; });
+            ctl.applyToSelected(it -> { if (it instanceof EditItem.Shape s && (s.kind == EditItem.Shape.Kind.RECT || s.kind == EditItem.Shape.Kind.ELLIPSE)) s.fill = c; });
             sync();
         });
         p.add(fillBtn);
@@ -118,7 +119,7 @@ public final class EditToolbar extends Ui.Card {
             if (syncing) return;
             props.width = ((Number) width.getValue()).floatValue();
             ctl.applyToSelected(it -> {
-                if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.HIGHLIGHT) s.width = props.width;
+                if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.HIGHLIGHT && s.kind != EditItem.Shape.Kind.REDACT) s.width = props.width;
                 else if (it instanceof EditItem.Ink i) i.width = props.width;
             });
         });
@@ -224,7 +225,7 @@ public final class EditToolbar extends Ui.Card {
         if (text) props.textColor = c; else props.color = c;
         ctl.applyToSelected(it -> {
             if (it instanceof EditItem.Text t) t.color = c;
-            else if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.HIGHLIGHT) s.stroke = c;
+            else if (it instanceof EditItem.Shape s && s.kind != EditItem.Shape.Kind.HIGHLIGHT && s.kind != EditItem.Shape.Kind.REDACT) s.stroke = c;
             else if (it instanceof EditItem.Ink i) i.color = c;
         });
         sync();
@@ -272,7 +273,7 @@ public final class EditToolbar extends Ui.Card {
                 italic.setSelected(t.italic);
                 props.textColor = t.color;
             } else if (sel instanceof EditItem.Shape s) {
-                if (s.kind != EditItem.Shape.Kind.HIGHLIGHT) {
+                if (s.kind != EditItem.Shape.Kind.HIGHLIGHT && s.kind != EditItem.Shape.Kind.REDACT) {
                     if (s.stroke != null) props.color = s.stroke;
                     width.setValue((double) s.width);
                 }

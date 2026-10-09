@@ -22,7 +22,7 @@ rmdir /s /q installers 2>nul
 mkdir installers
 
 rem Only the Java modules Readora uses (found with jdeps): ~80 MB runtime instead of ~170 MB.
-set COMMON=--name Readora --app-version %VERSION% --vendor "Readora" --description "Readora: The PDF App" --input dist --main-jar Readora.jar --main-class app.Main --icon packaging\logo.ico --add-modules java.base,java.desktop,java.logging,java.naming,java.prefs,java.sql,java.xml,jdk.unsupported,jdk.charsets,jdk.localedata --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6"
+set COMMON=--name Readora --app-version %VERSION% --vendor "Readora" --description "Readora: The PDF App" --input dist --main-jar Readora.jar --main-class app.Main --icon packaging\logo.ico --add-modules java.base,java.desktop,java.logging,java.naming,java.prefs,java.sql,java.xml,jdk.unsupported,jdk.charsets,jdk.localedata --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6 --disable-plugin dedup-legal-notices"
 rem Never change this UUID: it is how Windows recognises a newer Readora as an upgrade of the installed one.
 set WINOPTS=--win-menu --win-shortcut --win-dir-chooser --file-associations packaging\pdf-association-windows.properties --win-upgrade-uuid 3e1ea516-6f8f-4a77-85fa-0077ea8edd5f
 

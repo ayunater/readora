@@ -50,6 +50,9 @@ public final class AppSettings {
     public static boolean rememberRecent() { return getBool("rememberRecent", true); }
     public static boolean confirmExit()    { return getBool("confirmExit", true); }
 
+    /** Privacy: a password-protected file's name says something about you, so by default it is not listed in Recent. */
+    public static boolean hideProtectedFromRecent() { return getBool("hideProtectedFromRecent", true); }
+
     /** Reserved for tests: reads UTF-8 text safely. */
     static String read(File f) throws IOException {
         return new String(java.nio.file.Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
