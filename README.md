@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17+"/>
   <img src="https://img.shields.io/badge/Apache%20PDFBox-3.0.7-D22128?style=for-the-badge&logo=apache&logoColor=white" alt="Apache PDFBox 3.0.7"/>
   <img src="https://img.shields.io/badge/FlatLaf-3.7.1-4FA3FF?style=for-the-badge" alt="FlatLaf 3.7.1"/>
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20(jar)-D060F6?style=for-the-badge" alt="Platforms"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(jar)-D060F6?style=for-the-badge" alt="Platforms"/>
   <img src="https://img.shields.io/badge/tests-159%20passing-2EC27E?style=for-the-badge" alt="159 tests passing"/>
 </p>
 
