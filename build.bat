@@ -44,6 +44,7 @@ if /i "%~1"=="run" (
   exit /b %errorlevel%
 )
 if /i "%~1"=="test" (
+  rmdir /s /q out\test-classes 2>nul
   mkdir out\test-classes 2>nul
   if exist out\test-sources.txt del out\test-sources.txt
   for /r test %%f in (*.java) do (

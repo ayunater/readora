@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Apache%20PDFBox-3.0.7-D22128?style=for-the-badge&logo=apache&logoColor=white" alt="Apache PDFBox 3.0.7"/>
   <img src="https://img.shields.io/badge/FlatLaf-3.7.1-4FA3FF?style=for-the-badge" alt="FlatLaf 3.7.1"/>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(jar)-D060F6?style=for-the-badge" alt="Platforms"/>
-  <img src="https://img.shields.io/badge/tests-159%20passing-2EC27E?style=for-the-badge" alt="159 tests passing"/>
+  <img src="https://img.shields.io/badge/tests-154%20passing-2EC27E?style=for-the-badge" alt="154 tests passing"/>
 </p>
 
 <p align="center">
@@ -174,7 +174,7 @@ flowchart LR
 src/
   app/          Main window, file association, app info
   ui/           Ui (shared style), Dialogs, AppFileChooser, SVG renderer and icons
-  rightpanel/   Screens: home, recent, starred, tools, settings, themes
+  rightpanel/   Screens: HomeScreen, RecentScreen, StarredScreen, ToolsScreen, SettingsScreen, themes
   viewer/       PdfViewer, PdfSession, RenderService, DocumentView, thumbnails
     edit/       EditModel (undo/redo), EditItem, EditWriter, Redactor, PageSpace
     ops/        Security, Sanitizer, export, watermark, search, print
@@ -194,7 +194,7 @@ You need a **JDK 17 or newer**. There is no Maven or Gradle; the two dependencie
 ```bash
 ./build.sh          # compile and create dist/Readora.jar
 ./build.sh run      # build and launch
-./build.sh test     # build and run the 159 automated checks
+./build.sh test     # build and run the 154 automated checks
 ```
 
 On Windows use `build.bat` with the same arguments. In IntelliJ, mark `resources` as a **Resources Root** (so the SVG icons are packed into the jar) and `test` as test sources.
@@ -228,7 +228,9 @@ Ideas for v2 (an in-viewer find bar, selecting and copying text, form filling an
 
 ## 📄 License
 
-No license has been chosen yet, so all rights are reserved for now. Add a `LICENSE` file and update this section before you accept contributions.
+Readora is released under the [MIT License](LICENSE). You are free to use, modify and share it, including commercially, as long as the copyright notice and licence text are kept.
+
+Third-party components keep their own licences; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 

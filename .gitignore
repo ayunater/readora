@@ -3,6 +3,7 @@ out/
 dist/
 build/
 bin/
+classes/
 *.class
 
 # Installers and portable runtime builds are attached to GitHub Releases,

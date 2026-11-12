@@ -9,7 +9,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import rightpanel.home;
+import rightpanel.HomeScreen;
 
 import rightpanel.*;
 import store.AppSettings;
@@ -29,8 +29,8 @@ import viewer.PdfViewer;
  * Settings, and the PDF viewer itself. Sidebar buttons switch cards via
  * {@link #actionPerformed(ActionEvent)}; the Home screen's quick-action
  * buttons switch cards via callback lambdas passed into its
- * constructor instead, since {@code home} doesn't have a reference to
- * this class (see {@code home}'s javadoc for why).
+ * constructor instead, since {@link HomeScreen} doesn't have a reference to
+ * this class (see {@link HomeScreen}'s javadoc for why).
  *
  * {@link #main(String[])} is the JVM entry point: it loads the saved
  * theme (if any) and applies it via {@link ThemeManager} *before*
@@ -327,7 +327,7 @@ public class Main extends JFrame implements ActionListener {
                                 new Insets(15, 15, 15, 15),
                                 GridBagConstraints.CENTER);
 
-                home homePage = new home(this,
+                HomeScreen homePage = new HomeScreen(this,
                                 () -> {
                                         cardLayout.show(cards, "VIEWER");
                                         viewerPage.newPdf();
@@ -346,7 +346,7 @@ public class Main extends JFrame implements ActionListener {
 
                 cards.add(homePage, "HOME");
 
-                recent recentPage = new recent(this);
+                RecentScreen recentPage = new RecentScreen(this);
 
                 recentPage.putClientProperty(
                                 "FlatLaf.style",
@@ -356,7 +356,7 @@ public class Main extends JFrame implements ActionListener {
 
                 cards.add(recentPage, "RECENT");
 
-                starred starredPage = new starred(this);
+                StarredScreen starredPage = new StarredScreen(this);
 
                 starredPage.putClientProperty(
                                 "FlatLaf.style",
@@ -366,7 +366,7 @@ public class Main extends JFrame implements ActionListener {
 
                 cards.add(starredPage, "STARRED");
 
-                settings settingsPage = new settings(this);
+                SettingsScreen settingsPage = new SettingsScreen(this);
 
                 settingsPage.putClientProperty(
                                 "FlatLaf.style",
@@ -388,7 +388,7 @@ public class Main extends JFrame implements ActionListener {
 
                 // (drag-and-drop is installed for the whole window once everything is built, below)
 
-                tools toolsPage = new tools(viewerPage,
+                ToolsScreen toolsPage = new ToolsScreen(viewerPage,
                                 () -> cardLayout.show(cards, "VIEWER"));
 
                 toolsPage.putClientProperty(

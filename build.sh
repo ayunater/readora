@@ -13,6 +13,13 @@ CP="libs/*"
 OUT="out/classes"
 DIST="dist"
 
+# Git Bash / MSYS on Windows runs the Windows javac, which needs ';' between
+# classpath entries. A POSIX shell on Linux/macOS needs ':'.
+case "$(uname -s 2>/dev/null || echo unknown)" in
+  MINGW*|MSYS*|CYGWIN*) SEP=';' ;;
+  *) SEP=':' ;;
+esac
+
 case "${1:-build}" in
   clean)
     rm -rf out dist
@@ -41,13 +48,13 @@ case "${1:-build}" in
     exec java -jar "$DIST/Readora.jar"
     ;;
   icons)
-    java -Djava.awt.headless=true -cp "$OUT:$CP" scripts/IconExport.java packaging
+    java -Djava.awt.headless=true -cp "$OUT${SEP}$CP" scripts/IconExport.java packaging
     cp resources/logo.svg assets/logo.svg
     ;;
   test)
-    mkdir -p out/test-classes
+    rm -rf out/test-classes && mkdir -p out/test-classes
     find test -name '*.java' > out/test-sources.txt
-    javac -encoding UTF-8 -Xlint:-options -cp "$OUT:$CP" -d out/test-classes @out/test-sources.txt
-    java -Djava.awt.headless=true -cp "$OUT:out/test-classes:$CP" viewer.SmokeTest
+    javac -encoding UTF-8 -Xlint:-options -cp "$OUT${SEP}$CP" -d out/test-classes @out/test-sources.txt
+    java -Djava.awt.headless=true -cp "$OUT${SEP}out/test-classes${SEP}$CP" viewer.SmokeTest
     ;;
 esac

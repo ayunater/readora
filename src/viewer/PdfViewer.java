@@ -3,8 +3,8 @@ package viewer;
 import ui.Dialogs;
 import ui.AppFileChooser;
 import dialogs.PageOrganizerDialog;
-import rightpanel.recent;
-import rightpanel.starred;
+import rightpanel.RecentScreen;
+import rightpanel.StarredScreen;
 import store.AppSettings;
 import ui.Ui;
 import viewer.edit.*;
@@ -187,7 +187,7 @@ public class PdfViewer extends JPanel {
         thumbs.setDocument(geo);
         if (sameFile) thumbs.setCurrentPage(docView.currentPage());
         header.showFile(session.file(), geo.count());
-        header.setStarred(starred.STORE.contains(session.file()));
+        header.setStarred(StarredScreen.STORE.contains(session.file()));
         controls.setEnabledAll(true);
         controls.showPage(Math.min(docView.currentPage(), Math.max(0, geo.count() - 1)), geo.count());
         shownFile = session.file();
@@ -202,7 +202,7 @@ public class PdfViewer extends JPanel {
         if (!confirmEditsHandled()) return;
         boolean opened = session.open(file, this);
         boolean protectedFile = opened && session.document().isEncrypted();
-        if (opened && AppSettings.rememberRecent() && !(protectedFile && AppSettings.hideProtectedFromRecent())) recent.STORE.add(file);
+        if (opened && AppSettings.rememberRecent() && !(protectedFile && AppSettings.hideProtectedFromRecent())) RecentScreen.STORE.add(file);
     }
 
     /** Opens a file the app just produced (split/extract/watermark output). */
@@ -245,8 +245,8 @@ public class PdfViewer extends JPanel {
     private void toggleStar() {
         if (!session.isOpen()) return;
         File f = session.file();
-        if (starred.STORE.contains(f)) starred.STORE.remove(f); else starred.STORE.add(f);
-        header.setStarred(starred.STORE.contains(f));
+        if (StarredScreen.STORE.contains(f)) StarredScreen.STORE.remove(f); else StarredScreen.STORE.add(f);
+        header.setStarred(StarredScreen.STORE.contains(f));
     }
 
     /** Stops background rendering and closes the document (app shutdown). */
